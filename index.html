@@ -1,0 +1,1771 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Đấu Trường Cờ Vua</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: tournament-hall board with a brass accent. Menu is a two-column hero, game is board + side panel. */
+:root {
+  --bg: #e8eded;
+  --surface: #f7f9f9;
+  --ink: #152124;
+  --muted: #566a6e;
+  --line: #cbd6d7;
+  --accent: #c58b2b;
+  --on-accent: #1c1405;
+  --sq-l: #d5dfdb;
+  --sq-d: #5d8582;
+  --hl-last: rgba(214, 160, 52, .42);
+  --hl-sel: rgba(214, 160, 52, .78);
+  --tgt: rgba(21, 33, 36, .3);
+  --chk: rgba(204, 66, 46, .9);
+  --clock-bg: #dbe5e5;
+  --danger: #b73a28;
+  --pw-f: #f8f7f1; --pw-s: #1a2326; --pw-d: #1a2326;
+  --pb-f: #2b373b; --pb-s: #0a0f11; --pb-d: #aebfc3;
+  --f-display: 'Bricolage Grotesque', 'Be Vietnam Pro', system-ui, sans-serif;
+  --f-body: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1517; --surface: #162023; --ink: #e3ebe9; --muted: #8ea2a6; --line: #28373b;
+    --accent: #dfae52; --on-accent: #1b1304;
+    --sq-l: #a9bfba; --sq-d: #46706d;
+    --hl-last: rgba(223, 174, 82, .42); --hl-sel: rgba(223, 174, 82, .8); --tgt: rgba(10, 16, 18, .38);
+    --clock-bg: #0b1113; --danger: #e0715f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1517; --surface: #162023; --ink: #e3ebe9; --muted: #8ea2a6; --line: #28373b;
+  --accent: #dfae52; --on-accent: #1b1304;
+  --sq-l: #a9bfba; --sq-d: #46706d;
+  --hl-last: rgba(223, 174, 82, .42); --hl-sel: rgba(223, 174, 82, .8); --tgt: rgba(10, 16, 18, .38);
+  --clock-bg: #0b1113; --danger: #e0715f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 15px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.eyebrow { font: 600 12px/1.3 var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.small { font-size: 13px; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* pieces */
+.pc { fill: var(--pf); stroke: var(--ps); stroke-width: 3; stroke-linejoin: round; display: block; }
+.pc.w { --pf: var(--pw-f); --ps: var(--pw-s); --pd: var(--pw-d); }
+.pc.b { --pf: var(--pb-f); --ps: var(--pb-s); --pd: var(--pb-d); filter: drop-shadow(0 0 .6px rgba(255, 255, 255, .55)); }
+.ghost { position: fixed; z-index: 60; pointer-events: none; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .35)); }
+
+/* board */
+.board { display: grid; grid-template-columns: repeat(8, 1fr); width: 100%; aspect-ratio: 1; border-radius: 6px; overflow: hidden; user-select: none; -webkit-user-select: none; box-shadow: 0 0 0 1px var(--line), 0 10px 28px -14px rgba(10, 25, 28, .5); }
+.board.live { touch-action: none; cursor: pointer; }
+.sq { position: relative; display: grid; place-items: center; min-width: 0; }
+.sq.l { background: var(--sq-l); }
+.sq.d { background: var(--sq-d); }
+.sq::before { content: ""; position: absolute; inset: 0; pointer-events: none; }
+.sq.last::before { background: var(--hl-last); }
+.sq.sel::before { background: var(--hl-sel); }
+.sq.chk::before { background: radial-gradient(circle at 50% 50%, var(--chk) 0, var(--chk) 28%, transparent 72%); }
+.sq .pc { position: relative; z-index: 1; width: 90%; height: 90%; }
+.sq .pc.lift { opacity: .3; }
+.sq.tg::after { content: ""; position: absolute; width: 26%; aspect-ratio: 1; border-radius: 50%; background: var(--tgt); z-index: 2; pointer-events: none; }
+.sq.tg.cp::after { width: 88%; background: transparent; border: max(4px, .7vw) solid var(--tgt); }
+.co { position: absolute; z-index: 0; font: 600 clamp(9px, 1.5vw, 12px)/1 var(--f-body); pointer-events: none; }
+.co.cr { left: 4%; top: 4%; }
+.co.cf { right: 5%; bottom: 3%; }
+.sq.l .co { color: var(--sq-d); }
+.sq.d .co { color: var(--sq-l); }
+
+/* buttons and controls */
+.btn { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 14px; line-height: 1.2; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.btn.danger { border-color: var(--danger); color: var(--danger); }
+.btn.sm { padding: 6px 12px; font-size: 13px; }
+.btn.big { padding: 14px 22px; font-size: 16px; width: 100%; }
+button:focus-visible, input:focus-visible, .choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 500; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.field { display: grid; gap: 8px; }
+.field label { font-weight: 600; font-size: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 20px; max-width: 560px; }
+.panel.center { text-align: center; justify-items: center; }
+.ph { font-size: clamp(24px, 4vw, 32px); font-weight: 800; margin: 6px 0 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tag { font: 600 12px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; background: var(--ink); color: var(--bg); font-family: var(--f-body); }
+.tag.soft { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.back { background: none; border: 0; padding: 6px 0; cursor: pointer; color: var(--muted); font-weight: 500; }
+.back:hover { color: var(--ink); }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.note.warn { border-color: var(--accent); }
+.tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin: 4px 0 16px; }
+.tab { border: 0; background: none; padding: 8px 16px; border-radius: 7px; cursor: pointer; font-weight: 600; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.nmin { font: 500 16px/1.2 var(--f-body); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); width: 100%; max-width: 280px; }
+.codein { font: 700 28px/1 var(--f-mono); letter-spacing: .25em; text-transform: uppercase; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); width: 100%; max-width: 280px; }
+.bigcode { font: 700 clamp(36px, 9vw, 56px)/1 var(--f-mono); letter-spacing: .22em; padding: 16px 12px 16px 24px; border-radius: 12px; background: var(--clock-bg); user-select: all; }
+.wait { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+.wait i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(.55); opacity: .5; } }
+
+/* menu */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: center; padding-top: 6px; }
+.hero-txt { display: grid; gap: 14px; }
+.hero h1 { font-size: clamp(36px, 8vw, 62px); font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+.lead { font-size: 17px; color: var(--muted); max-width: 46ch; }
+.hero-board { width: min(100%, 420px); }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; max-width: 560px; }
+.choices.one { grid-template-columns: minmax(0, 1fr); max-width: 520px; }
+.choice { text-align: left; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: grid; gap: 4px; }
+.choice b { font: 700 22px/1.2 var(--f-display); }
+.choice span { color: var(--muted); font-size: 14px; }
+.choice:hover { border-color: var(--accent); }
+@media (min-width: 820px) { .hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 420px); gap: 48px; } }
+
+/* game */
+.gamehead { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 900px) { .game { grid-template-columns: minmax(0, 640px) minmax(280px, 1fr); align-items: start; } }
+.stage { display: grid; gap: 10px; min-width: 0; }
+.board-wrap { position: relative; }
+.strip { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.strip.act { border-color: var(--accent); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--sq-d); flex: none; }
+.avatar .pc { width: 78%; height: 78%; }
+.who { flex: 1; min-width: 0; display: grid; }
+.who b { font: 700 16px/1.2 var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-name { font-size: 12px; color: var(--muted); }
+.cap { display: flex; align-items: center; flex-wrap: wrap; min-height: 18px; padding-right: 6px; }
+.cap .pc { width: 17px; height: 17px; margin-right: -5px; }
+.cap em { font: 600 12px/1 var(--f-mono); font-style: normal; color: var(--muted); margin-left: 10px; }
+.clock { display: grid; justify-items: end; gap: 2px; min-width: 118px; padding: 6px 12px; border-radius: 10px; background: var(--clock-bg); text-align: right; }
+.clock .t { font: 700 clamp(22px, 5.4vw, 30px)/1.05 var(--f-mono); font-variant-numeric: tabular-nums; }
+.clock .s { font: 500 11px/1.2 var(--f-mono); color: var(--muted); white-space: nowrap; }
+.clock.up::before { content: "Tổng thời gian"; font: 500 10px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.clock.on { background: var(--accent); color: var(--on-accent); }
+.clock.on .s { color: var(--on-accent); opacity: .8; }
+.clock.low:not(.on) .t { color: var(--danger); }
+.clock.low.on .t { color: #7a1608; }
+.side { display: grid; gap: 12px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.card h2 { font-size: 15px; font-weight: 700; }
+.stat-line { font: 700 18px/1.3 var(--f-display); }
+.stat-line.think::after { content: ""; display: inline-block; width: 1.4em; text-align: left; animation: dots 1.2s steps(4, end) infinite; }
+@keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75%, 100% { content: "..."; } }
+.moves { display: grid; grid-template-columns: 34px 1fr 1fr; align-content: start; max-height: 260px; overflow-y: auto; font: 500 14px/1.9 var(--f-mono); }
+.mn { color: var(--muted); }
+.mv { padding: 0 6px; border-radius: 4px; }
+.mv.cur { background: var(--hl-last); }
+.empty { grid-column: 1 / -1; color: var(--muted); font-family: var(--f-body); font-size: 14px; }
+.ctl { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+.ov { position: absolute; inset: 0; background: rgba(8, 16, 18, .62); display: grid; place-items: center; padding: 16px; z-index: 20; border-radius: 6px; }
+.ovc { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 12px; text-align: center; justify-items: center; max-width: 360px; width: 100%; }
+.ovc h3 { font-size: 30px; font-weight: 800; }
+.promo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.pbtn { border: 1px solid var(--line); background: var(--sq-l); border-radius: 10px; padding: 8px 4px; cursor: pointer; display: grid; justify-items: center; gap: 2px; font-size: 12px; font-weight: 600; color: #152124; }
+.pbtn:hover { border-color: var(--accent); }
+.pbtn .pc { width: 100%; max-width: 54px; }
+.toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 500; transition: opacity .2s, transform .2s; z-index: 80; max-width: calc(100vw - 32px); }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 520px) {
+  .clock { min-width: 100px; padding: 5px 9px; }
+  .avatar { width: 30px; height: 30px; }
+  .strip { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .wait i, .stat-line.think::after { animation: none; } .toast { transition: none; } }
+
+/* ===== v3: một màn hình, chọn chế độ bằng ô tích, hướng dẫn dạng hover ===== */
+:root { --chrome: 172px; --chrome-m: 392px; }
+body { padding-block: 10px; }
+.wrap { max-width: 1280px; min-height: calc(100dvh - 20px); display: flex; flex-direction: column; justify-content: center; }
+
+/* tooltip */
+.tip { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; margin-left: 6px; border-radius: 50%; border: 1px solid var(--muted); background: transparent; color: var(--muted); font: 700 11px/1 var(--f-body); font-style: normal; cursor: help; vertical-align: middle; text-transform: none; letter-spacing: 0; }
+.tip::after { content: attr(data-tip); position: absolute; left: -8px; bottom: calc(100% + 8px); width: max-content; max-width: min(260px, 72vw); padding: 8px 10px; border-radius: 8px; background: var(--ink); color: var(--bg); font: 500 12.5px/1.45 var(--f-body); text-align: left; white-space: normal; display: none; pointer-events: none; z-index: 70; }
+.tip.c::after { left: 50%; transform: translateX(-50%); }
+.tip:hover, .tip:focus-visible { color: var(--ink); border-color: var(--ink); }
+.tip.r::after { left: auto; right: -8px; }
+.tip:hover::after, .tip:focus::after { display: block; }
+body { overflow-x: hidden; }
+
+/* menu */
+.menu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: center; }
+.menu-main { display: grid; gap: 14px; max-width: 480px; width: 100%; margin-inline: auto; }
+.menu h1 { font-size: clamp(30px, 6vw, 46px); font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+.menu .hero-board { display: none; }
+@media (min-width: 820px) {
+  .menu { grid-template-columns: minmax(0, 480px) auto; justify-content: center; gap: 44px; }
+  .menu .hero-board { display: block; width: min(420px, calc(100dvh - 60px)); }
+  .menu-main { margin-inline: 0; }
+}
+.menu.one { justify-items: center; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode { position: relative; display: block; cursor: pointer; }
+.mode input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.mc { display: grid; grid-template-columns: 22px 1fr; column-gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.mc b { font: 700 18px/1.2 var(--f-display); }
+.mc small { grid-column: 2; color: var(--muted); font-size: 13px; line-height: 1.3; }
+.tk { grid-row: 1 / span 2; width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--muted); display: grid; place-items: center; font: 800 13px/1 var(--f-body); color: transparent; }
+.mode input:checked + .mc { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.mode input:checked + .mc .tk { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.mode input:focus-visible + .mc { outline: 2px solid var(--accent); outline-offset: 2px; }
+.menu .panel { max-width: none; padding: 16px; gap: 14px; }
+.menu .field { gap: 6px; }
+.menu .chip { padding: 7px 13px; font-size: 13.5px; }
+.board { grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(8, minmax(0, 1fr)); }
+.sq { min-height: 0; overflow: hidden; }
+.gamehead { justify-content: center; }
+.box { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.boxh { display: flex; align-items: center; font: 700 15px/1.2 var(--f-display); }
+.inrow { display: flex; gap: 8px; align-items: stretch; }
+.inrow .codein { flex: 1; min-width: 0; max-width: none; font-size: 22px; padding: 9px 12px; }
+.inrow .btn { white-space: nowrap; }
+.menu .nmin { max-width: none; padding: 8px 12px; }
+.menu .btn.big { padding: 12px 18px; }
+.menu .bigcode { font-size: clamp(34px, 9vw, 52px); padding: 12px 10px 12px 22px; }
+.menu .panel.center { gap: 14px; }
+
+/* game: vừa một màn hình */
+.gamehead { margin-bottom: 6px; align-items: center; gap: 6px; min-height: 26px; }
+.gamehead .tip { margin-left: 0; }
+.game { gap: 12px; }
+.stage { gap: 6px; width: min(100%, calc(100dvh - var(--chrome-m))); margin-inline: auto; }
+.strip { padding: 4px 8px; gap: 8px; border-radius: 10px; min-height: 48px; }
+.avatar { width: 28px; height: 28px; }
+.who { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
+.who b { font-size: 15px; }
+.side-name { font-size: 12px; }
+.cap { min-height: 0; flex-basis: 100%; }
+.cap .pc { width: 14px; height: 14px; margin-right: -4px; }
+.cap:empty { display: none; }
+.clock { min-width: 84px; padding: 3px 9px; gap: 0; }
+.clock .t { font-size: 20px; }
+.clock .s { font-size: 10px; }
+.clock.up::before { content: none; }
+.side { gap: 8px; }
+.side .card { padding: 10px 12px; gap: 6px; }
+.stat-line { font-size: 16px; }
+.moves { max-height: 62px; line-height: 1.7; font-size: 13px; }
+.ctl { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ctl .btn { padding: 8px 4px; font-size: 13px; }
+@media (min-width: 900px) {
+  .stage { width: min(calc(100vw - 440px), calc(100dvh - var(--chrome))); margin-inline: 0; }
+  .game { grid-template-columns: auto minmax(260px, 340px); justify-content: center; gap: 18px; align-items: start; }
+  .moves { max-height: calc(100dvh - 330px); min-height: 80px; }
+  .ctl { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ctl .btn { padding: 10px 8px; font-size: 14px; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<defs>
+<symbol id="p-1" viewBox="0 0 100 100"><circle cx="50" cy="30" r="12"/><path d="M42 43H58C58 55 68 62 70 76H30C32 62 42 55 42 43Z"/><rect x="24" y="76" width="52" height="12" rx="4"/></symbol>
+<symbol id="p-2" viewBox="0 0 100 100"><path d="M30 80C28 66 34 58 42 50C36 51 29 51 25 46C22 42 26 36 32 32L38 18L45 25C52 15 66 18 73 31C80 44 77 64 75 80Z"/><rect x="24" y="78" width="54" height="10" rx="4"/><circle cx="46" cy="34" r="2.6" style="fill:var(--pd);stroke:none"/><path d="M27 43L30 44" style="stroke:var(--pd);stroke-width:3.5;stroke-linecap:round;fill:none"/></symbol>
+<symbol id="p-3" viewBox="0 0 100 100"><circle cx="50" cy="14" r="6"/><path d="M50 20C34 30 32 46 38 58H62C68 46 66 30 50 20Z"/><rect x="34" y="56" width="32" height="9" rx="4"/><path d="M40 65H60L68 78H32Z"/><rect x="24" y="76" width="52" height="12" rx="4"/><path d="M51 28L58 40" style="stroke:var(--pd);stroke-width:3.5;stroke-linecap:round;fill:none"/></symbol>
+<symbol id="p-4" viewBox="0 0 100 100"><path d="M28 16H40V26H44V16H56V26H60V16H72V38H28Z"/><path d="M33 38H67L64 64H36Z"/><path d="M36 64H64L70 77H30Z"/><rect x="24" y="76" width="52" height="12" rx="4"/></symbol>
+<symbol id="p-5" viewBox="0 0 100 100"><path d="M22 30L29 58L36 24L43 56L50 20L57 56L64 24L71 58L78 30L72 72H28Z"/><circle cx="22" cy="27" r="5"/><circle cx="36" cy="21" r="5"/><circle cx="50" cy="17" r="5"/><circle cx="64" cy="21" r="5"/><circle cx="78" cy="27" r="5"/><path d="M28 72H72L75 78H25Z"/><rect x="24" y="77" width="52" height="11" rx="4"/></symbol>
+<symbol id="p-6" viewBox="0 0 100 100"><path d="M47 6H53V12H59V18H53V24H47V18H41V12H47Z"/><path d="M50 26C32 26 22 40 28 54L30 70H70L72 54C78 40 68 26 50 26Z"/><path d="M28 70H72L75 77H25Z"/><rect x="24" y="76" width="52" height="12" rx="4"/><path d="M33 52H67" style="stroke:var(--pd);stroke-width:3;stroke-linecap:round;fill:none"/></symbol>
+</defs></svg>
+<div class="wrap"><main id="screen"></main></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script id="engine">
+var Chess = (function () {
+  'use strict';
+  var P = 1, N = 2, B = 3, R = 4, Q = 5, K = 6;
+  var VAL = [0, 100, 320, 330, 500, 900, 0];
+  var F_EP = 1, F_CASTLE = 2, F_DP = 4;
+  var START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  var FILES = 'abcdefgh';
+  var LETTERS = 'PNBRQK';
+  var KNIGHT = [], KING = [], RAYS = [], CMASK = [];
+  var DIRS = [[-1, 0], [0, 1], [1, 0], [0, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]];
+  var MATE = 30000, INF = 32000, MAXPLY = 64;
+  var i, sq;
+
+  for (i = 0; i < 64; i++) CMASK[i] = 15;
+  CMASK[60] = 12; CMASK[56] = 13; CMASK[63] = 14;
+  CMASK[4] = 3; CMASK[0] = 7; CMASK[7] = 11;
+
+  (function () {
+    var KN = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+    for (var s = 0; s < 64; s++) {
+      var r = s >> 3, f = s & 7, rr, ff, dr, df;
+      KNIGHT[s] = []; KING[s] = []; RAYS[s] = [];
+      for (var k = 0; k < KN.length; k++) {
+        rr = r + KN[k][0]; ff = f + KN[k][1];
+        if (rr >= 0 && rr < 8 && ff >= 0 && ff < 8) KNIGHT[s].push(rr * 8 + ff);
+      }
+      for (dr = -1; dr <= 1; dr++) for (df = -1; df <= 1; df++) {
+        if (!dr && !df) continue;
+        rr = r + dr; ff = f + df;
+        if (rr >= 0 && rr < 8 && ff >= 0 && ff < 8) KING[s].push(rr * 8 + ff);
+      }
+      for (var d = 0; d < 8; d++) {
+        var ray = [];
+        rr = r + DIRS[d][0]; ff = f + DIRS[d][1];
+        while (rr >= 0 && rr < 8 && ff >= 0 && ff < 8) { ray.push(rr * 8 + ff); rr += DIRS[d][0]; ff += DIRS[d][1]; }
+        RAYS[s].push(ray);
+      }
+    }
+  })();
+
+  function sqName(s) { return FILES[s & 7] + (8 - (s >> 3)); }
+
+  function Position() {
+    this.b = new Int8Array(64);
+    this.turn = 1; this.castle = 0; this.ep = -1; this.half = 0; this.full = 1;
+    this.kp = [-1, -1];
+    this.st = [];
+  }
+
+  Position.prototype.setFEN = function (fen) {
+    var parts = fen.split(' '), rows = parts[0].split('/'), b = this.b, r, f, j, ch;
+    for (j = 0; j < 64; j++) b[j] = 0;
+    for (r = 0; r < 8; r++) {
+      f = 0;
+      for (j = 0; j < rows[r].length; j++) {
+        ch = rows[r][j];
+        if (ch >= '1' && ch <= '8') { f += +ch; continue; }
+        var lower = ch === ch.toLowerCase();
+        var pi = 'pnbrqk'.indexOf(ch.toLowerCase()) + 1;
+        b[r * 8 + f] = lower ? -pi : pi;
+        if (pi === K) this.kp[lower ? 1 : 0] = r * 8 + f;
+        f++;
+      }
+    }
+    this.turn = parts[1] === 'b' ? -1 : 1;
+    this.castle = 0;
+    var cs = parts[2] || '-';
+    for (j = 0; j < cs.length; j++) {
+      if (cs[j] === 'K') this.castle |= 1;
+      else if (cs[j] === 'Q') this.castle |= 2;
+      else if (cs[j] === 'k') this.castle |= 4;
+      else if (cs[j] === 'q') this.castle |= 8;
+    }
+    var e = parts[3] || '-';
+    this.ep = e === '-' ? -1 : (8 - parseInt(e[1], 10)) * 8 + (e.charCodeAt(0) - 97);
+    this.half = parseInt(parts[4] || '0', 10) || 0;
+    this.full = parseInt(parts[5] || '1', 10) || 1;
+    this.st = [];
+    return this;
+  };
+
+  Position.prototype.toFEN = function () {
+    var s = '', r, f, e, p, b = this.b;
+    for (r = 0; r < 8; r++) {
+      e = 0;
+      for (f = 0; f < 8; f++) {
+        p = b[r * 8 + f];
+        if (!p) { e++; continue; }
+        if (e) { s += e; e = 0; }
+        var l = LETTERS[Math.abs(p) - 1];
+        s += p > 0 ? l : l.toLowerCase();
+      }
+      if (e) s += e;
+      if (r < 7) s += '/';
+    }
+    var c = '';
+    if (this.castle & 1) c += 'K';
+    if (this.castle & 2) c += 'Q';
+    if (this.castle & 4) c += 'k';
+    if (this.castle & 8) c += 'q';
+    return s + ' ' + (this.turn === 1 ? 'w' : 'b') + ' ' + (c || '-') + ' ' +
+      (this.ep < 0 ? '-' : sqName(this.ep)) + ' ' + this.half + ' ' + this.full;
+  };
+
+  Position.prototype.attacked = function (s, by) {
+    var b = this.b, r = s >> 3, f = s & 7, i, d, k, ray, p;
+    var pr = by === 1 ? r + 1 : r - 1;
+    if (pr >= 0 && pr < 8) {
+      if (f > 0 && b[pr * 8 + f - 1] === by * P) return true;
+      if (f < 7 && b[pr * 8 + f + 1] === by * P) return true;
+    }
+    var kn = KNIGHT[s];
+    for (i = 0; i < kn.length; i++) if (b[kn[i]] === by * N) return true;
+    var kg = KING[s];
+    for (i = 0; i < kg.length; i++) if (b[kg[i]] === by * K) return true;
+    var rays = RAYS[s];
+    for (d = 0; d < 4; d++) {
+      ray = rays[d];
+      for (k = 0; k < ray.length; k++) {
+        p = b[ray[k]];
+        if (p) { if (p === by * R || p === by * Q) return true; break; }
+      }
+    }
+    for (d = 4; d < 8; d++) {
+      ray = rays[d];
+      for (k = 0; k < ray.length; k++) {
+        p = b[ray[k]];
+        if (p) { if (p === by * B || p === by * Q) return true; break; }
+      }
+    }
+    return false;
+  };
+
+  Position.prototype.inCheck = function (color) {
+    return this.attacked(this.kp[color === 1 ? 0 : 1], -color);
+  };
+
+  function addPromos(moves, from, to) {
+    moves.push(from | (to << 6) | (Q << 12));
+    moves.push(from | (to << 6) | (R << 12));
+    moves.push(from | (to << 6) | (B << 12));
+    moves.push(from | (to << 6) | (N << 12));
+  }
+
+  Position.prototype.gen = function (capsOnly) {
+    var moves = [], b = this.b, c = this.turn, s, p, i, k, d, ray, t, tp, r, f;
+    for (s = 0; s < 64; s++) {
+      p = b[s] * c;
+      if (p <= 0) continue;
+      r = s >> 3; f = s & 7;
+      if (p === P) {
+        var dir = c === 1 ? -8 : 8, startR = c === 1 ? 6 : 1, promR = c === 1 ? 1 : 6;
+        var fwd = s + dir;
+        if (!b[fwd]) {
+          if (r === promR) addPromos(moves, s, fwd);
+          else if (!capsOnly) {
+            moves.push(s | (fwd << 6));
+            if (r === startR && !b[fwd + dir]) moves.push(s | ((fwd + dir) << 6) | (F_DP << 16));
+          }
+        }
+        for (var df = -1; df <= 1; df += 2) {
+          var ff = f + df;
+          if (ff < 0 || ff > 7) continue;
+          t = fwd + df; tp = b[t];
+          if (tp * c < 0) {
+            if (r === promR) addPromos(moves, s, t);
+            else moves.push(s | (t << 6));
+          } else if (t === this.ep && !tp) {
+            moves.push(s | (t << 6) | (F_EP << 16));
+          }
+        }
+      } else if (p === N || p === K) {
+        var tl = p === N ? KNIGHT[s] : KING[s];
+        for (i = 0; i < tl.length; i++) {
+          t = tl[i]; tp = b[t];
+          if (tp * c > 0) continue;
+          if (capsOnly && !tp) continue;
+          moves.push(s | (t << 6));
+        }
+        if (p === K && !capsOnly) {
+          if (c === 1 && s === 60) {
+            if ((this.castle & 1) && !b[61] && !b[62] && b[63] === R &&
+              !this.attacked(60, -1) && !this.attacked(61, -1) && !this.attacked(62, -1))
+              moves.push(60 | (62 << 6) | (F_CASTLE << 16));
+            if ((this.castle & 2) && !b[59] && !b[58] && !b[57] && b[56] === R &&
+              !this.attacked(60, -1) && !this.attacked(59, -1) && !this.attacked(58, -1))
+              moves.push(60 | (58 << 6) | (F_CASTLE << 16));
+          } else if (c === -1 && s === 4) {
+            if ((this.castle & 4) && !b[5] && !b[6] && b[7] === -R &&
+              !this.attacked(4, 1) && !this.attacked(5, 1) && !this.attacked(6, 1))
+              moves.push(4 | (6 << 6) | (F_CASTLE << 16));
+            if ((this.castle & 8) && !b[3] && !b[2] && !b[1] && b[0] === -R &&
+              !this.attacked(4, 1) && !this.attacked(3, 1) && !this.attacked(2, 1))
+              moves.push(4 | (2 << 6) | (F_CASTLE << 16));
+          }
+        }
+      } else {
+        var d0 = p === B ? 4 : 0, d1 = p === R ? 4 : 8;
+        for (d = d0; d < d1; d++) {
+          ray = RAYS[s][d];
+          for (k = 0; k < ray.length; k++) {
+            t = ray[k]; tp = b[t];
+            if (tp === 0) { if (!capsOnly) moves.push(s | (t << 6)); }
+            else { if (tp * c < 0) moves.push(s | (t << 6)); break; }
+          }
+        }
+      }
+    }
+    return moves;
+  };
+
+  Position.prototype.make = function (m) {
+    var b = this.b, from = m & 63, to = (m >> 6) & 63, promo = (m >> 12) & 7, fl = m >> 16;
+    var c = this.turn, p = b[from], cap = b[to];
+    if (fl & F_EP) { var cs = to + (c === 1 ? 8 : -8); cap = b[cs]; b[cs] = 0; }
+    this.st.push(m, cap, this.castle, this.ep, this.half);
+    b[to] = promo ? c * promo : p;
+    b[from] = 0;
+    if (fl & F_CASTLE) {
+      if (to > from) { b[to - 1] = b[to + 1]; b[to + 1] = 0; }
+      else { b[to + 1] = b[to - 2]; b[to - 2] = 0; }
+    }
+    if (p === c * K) this.kp[c === 1 ? 0 : 1] = to;
+    this.castle &= CMASK[from] & CMASK[to];
+    this.ep = (fl & F_DP) ? (from + to) >> 1 : -1;
+    this.half = (p === c * P || cap) ? 0 : this.half + 1;
+    if (c === -1) this.full++;
+    this.turn = -c;
+  };
+
+  Position.prototype.unmake = function () {
+    var st = this.st, half = st.pop(), ep = st.pop(), castle = st.pop(), cap = st.pop(), m = st.pop();
+    var from = m & 63, to = (m >> 6) & 63, promo = (m >> 12) & 7, fl = m >> 16;
+    var c = -this.turn, b = this.b;
+    this.turn = c; this.castle = castle; this.ep = ep; this.half = half;
+    if (c === -1) this.full--;
+    var p = b[to];
+    if (promo) p = c * P;
+    b[from] = p;
+    if (fl & F_EP) { b[to] = 0; b[to + (c === 1 ? 8 : -8)] = cap; }
+    else b[to] = cap;
+    if (fl & F_CASTLE) {
+      if (to > from) { b[to + 1] = b[to - 1]; b[to - 1] = 0; }
+      else { b[to - 2] = b[to + 1]; b[to + 1] = 0; }
+    }
+    if (p === c * K) this.kp[c === 1 ? 0 : 1] = from;
+  };
+
+  Position.prototype.legal = function (capsOnly) {
+    var ps = this.gen(capsOnly), out = [], j;
+    for (j = 0; j < ps.length; j++) {
+      this.make(ps[j]);
+      if (!this.inCheck(-this.turn)) out.push(ps[j]);
+      this.unmake();
+    }
+    return out;
+  };
+
+  Position.prototype.key = function () {
+    var s = '', j, b = this.b;
+    for (j = 0; j < 64; j++) s += String.fromCharCode(71 + b[j]);
+    var epk = -1;
+    if (this.ep >= 0) {
+      var ms = this.legal();
+      for (j = 0; j < ms.length; j++) if ((ms[j] >> 16) & F_EP) { epk = this.ep; break; }
+    }
+    return s + (this.turn === 1 ? 'w' : 'b') + this.castle + '.' + epk;
+  };
+
+  function uci(m) {
+    var promo = (m >> 12) & 7;
+    return sqName(m & 63) + sqName((m >> 6) & 63) + (promo ? 'pnbrqk'[promo - 1] : '');
+  }
+
+  function findMove(pos, str) {
+    var ms = pos.legal();
+    for (var j = 0; j < ms.length; j++) if (uci(ms[j]) === str) return ms[j];
+    return null;
+  }
+
+  function san(pos, m) {
+    var from = m & 63, to = (m >> 6) & 63, promo = (m >> 12) & 7, fl = m >> 16;
+    var p = Math.abs(pos.b[from]), s, j;
+    if (fl & F_CASTLE) s = to > from ? 'O-O' : 'O-O-O';
+    else {
+      var cap = pos.b[to] !== 0 || (fl & F_EP);
+      if (p === P) {
+        s = cap ? FILES[from & 7] + 'x' : '';
+        s += sqName(to);
+        if (promo) s += '=' + LETTERS[promo - 1];
+      } else {
+        s = LETTERS[p - 1];
+        var others = pos.legal().filter(function (o) {
+          return o !== m && ((o >> 6) & 63) === to && Math.abs(pos.b[o & 63]) === p;
+        });
+        if (others.length) {
+          var sameFile = others.some(function (o) { return (o & 7) === (from & 7); });
+          var sameRank = others.some(function (o) { return ((o & 63) >> 3) === (from >> 3); });
+          if (!sameFile) s += FILES[from & 7];
+          else if (!sameRank) s += (8 - (from >> 3));
+          else s += sqName(from);
+        }
+        if (cap) s += 'x';
+        s += sqName(to);
+      }
+    }
+    pos.make(m);
+    if (pos.inCheck(pos.turn)) s += pos.legal().length ? '+' : '#';
+    pos.unmake();
+    return s;
+  }
+
+  function insufficient(pos) {
+    var b = pos.b, minors = 0, knights = 0, bishopColors = [0, 0], j, a;
+    for (j = 0; j < 64; j++) {
+      a = Math.abs(b[j]);
+      if (a === P || a === R || a === Q) return false;
+      if (a === N) { minors++; knights++; }
+      else if (a === B) { minors++; bishopColors[((j >> 3) + (j & 7)) & 1]++; }
+    }
+    if (minors <= 1) return true;
+    if (knights === 0 && (bishopColors[0] === 0 || bishopColors[1] === 0)) return true;
+    return false;
+  }
+
+  // ---------- evaluation ----------
+  var PST = {};
+  PST[P] = [0, 0, 0, 0, 0, 0, 0, 0, 50, 50, 50, 50, 50, 50, 50, 50, 10, 10, 20, 30, 30, 20, 10, 10, 5, 5, 10, 25, 25, 10, 5, 5, 0, 0, 0, 20, 20, 0, 0, 0, 5, -5, -10, 0, 0, -10, -5, 5, 5, 10, 10, -20, -20, 10, 10, 5, 0, 0, 0, 0, 0, 0, 0, 0];
+  PST[N] = [-50, -40, -30, -30, -30, -30, -40, -50, -40, -20, 0, 0, 0, 0, -20, -40, -30, 0, 10, 15, 15, 10, 0, -30, -30, 5, 15, 20, 20, 15, 5, -30, -30, 0, 15, 20, 20, 15, 0, -30, -30, 5, 10, 15, 15, 10, 5, -30, -40, -20, 0, 5, 5, 0, -20, -40, -50, -40, -30, -30, -30, -30, -40, -50];
+  PST[B] = [-20, -10, -10, -10, -10, -10, -10, -20, -10, 0, 0, 0, 0, 0, 0, -10, -10, 0, 5, 10, 10, 5, 0, -10, -10, 5, 5, 10, 10, 5, 5, -10, -10, 0, 10, 10, 10, 10, 0, -10, -10, 10, 10, 10, 10, 10, 10, -10, -10, 5, 0, 0, 0, 0, 5, -10, -20, -10, -10, -10, -10, -10, -10, -20];
+  PST[R] = [0, 0, 0, 0, 0, 0, 0, 0, 5, 10, 10, 10, 10, 10, 10, 5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, -5, 0, 0, 0, 5, 5, 0, 0, 0];
+  PST[Q] = [-20, -10, -10, -5, -5, -10, -10, -20, -10, 0, 0, 0, 0, 0, 0, -10, -10, 0, 5, 5, 5, 5, 0, -10, -5, 0, 5, 5, 5, 5, 0, -5, 0, 0, 5, 5, 5, 5, 0, -5, -10, 5, 5, 5, 5, 5, 0, -10, -10, 0, 5, 0, 0, 0, 0, -10, -20, -10, -10, -5, -5, -10, -10, -20];
+  var KMID = [-30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -30, -40, -40, -50, -50, -40, -40, -30, -20, -30, -30, -40, -40, -30, -30, -20, -10, -20, -20, -20, -20, -20, -20, -10, 20, 20, 0, 0, 0, 0, 20, 20, 20, 30, 10, 0, 0, 10, 30, 20];
+  var KEND = [-50, -40, -30, -20, -20, -30, -40, -50, -30, -20, -10, 0, 0, -10, -20, -30, -30, -10, 20, 30, 30, 20, -10, -30, -30, -10, 30, 40, 40, 30, -10, -30, -30, -10, 30, 40, 40, 30, -10, -30, -30, -10, 20, 30, 30, 20, -10, -30, -30, -30, 0, 0, 0, 0, -30, -30, -50, -30, -30, -30, -30, -30, -30, -50];
+
+  function centerDist(s) { var r = s >> 3, f = s & 7; return Math.max(3 - r, r - 4) + Math.max(3 - f, f - 4); }
+  function kingDist(a, b) { return Math.abs((a >> 3) - (b >> 3)) + Math.abs((a & 7) - (b & 7)); }
+
+  function evaluate(pos) {
+    var b = pos.b, score = 0, s, p, a, idx, v, phase = 0;
+    var mat = [0, 0, 0], pawns = [0, 0, 0], bish = [0, 0, 0];
+    for (s = 0; s < 64; s++) {
+      p = b[s]; if (!p) continue;
+      a = p > 0 ? p : -p;
+      if (a === N || a === B) phase += 1; else if (a === R) phase += 2; else if (a === Q) phase += 4;
+    }
+    var eg = phase <= 6;
+    for (s = 0; s < 64; s++) {
+      p = b[s]; if (!p) continue;
+      a = p > 0 ? p : -p;
+      idx = p > 0 ? s : s ^ 56;
+      var side = p > 0 ? 1 : 2;
+      if (a === K) v = eg ? KEND[idx] : KMID[idx];
+      else {
+        v = VAL[a] + PST[a][idx];
+        if (a === P) pawns[side]++; else mat[side] += VAL[a];
+        if (a === B) bish[side]++;
+      }
+      score += p > 0 ? v : -v;
+    }
+    if (bish[1] >= 2) score += 30;
+    if (bish[2] >= 2) score -= 30;
+    if (eg) {
+      if (mat[2] === 0 && pawns[2] === 0 && mat[1] >= 300) {
+        score += 5 * centerDist(pos.kp[1]) + 2 * (14 - kingDist(pos.kp[0], pos.kp[1]));
+      } else if (mat[1] === 0 && pawns[1] === 0 && mat[2] >= 300) {
+        score -= 5 * centerDist(pos.kp[0]) + 2 * (14 - kingDist(pos.kp[0], pos.kp[1]));
+      }
+    }
+    return pos.turn === 1 ? score : -score;
+  }
+
+  // ---------- search ----------
+  function think(pos, o) {
+    o = o || {};
+    var rootMoves = pos.legal();
+    if (!rootMoves.length) return null;
+    if (rootMoves.length === 1) return { move: rootMoves[0], score: 0, depth: 0, nodes: 0 };
+    var maxDepth = o.maxDepth || 3;
+    var deadline = Date.now() + (o.timeMs || 1000);
+    var useQ = o.qs !== false;
+    var nodes = 0, stop = false;
+
+    function moveScore(m) {
+      var from = m & 63, to = (m >> 6) & 63, promo = (m >> 12) & 7, fl = m >> 16;
+      var cap = pos.b[to], s = 0;
+      if (cap) s = 10 * VAL[cap > 0 ? cap : -cap] - VAL[Math.abs(pos.b[from])] / 10 + 1000;
+      else if (fl & F_EP) s = 1000 + 100;
+      if (promo) s += VAL[promo];
+      return s;
+    }
+    function order(ms) {
+      var arr = new Array(ms.length), j;
+      for (j = 0; j < ms.length; j++) arr[j] = { m: ms[j], s: moveScore(ms[j]) };
+      arr.sort(function (x, y) { return y.s - x.s; });
+      for (j = 0; j < ms.length; j++) ms[j] = arr[j].m;
+      return ms;
+    }
+    function tick() {
+      nodes++;
+      if ((nodes & 2047) === 0 && Date.now() > deadline) stop = true;
+    }
+    function qs(alpha, beta, ply) {
+      tick(); if (stop) return 0;
+      var stand = evaluate(pos);
+      if (stand >= beta) return stand;
+      if (stand > alpha) alpha = stand;
+      if (ply >= MAXPLY) return stand;
+      var ms = order(pos.gen(true)), j, sc;
+      for (j = 0; j < ms.length; j++) {
+        pos.make(ms[j]);
+        if (pos.inCheck(-pos.turn)) { pos.unmake(); continue; }
+        sc = -qs(-beta, -alpha, ply + 1);
+        pos.unmake();
+        if (stop) return 0;
+        if (sc >= beta) return sc;
+        if (sc > alpha) alpha = sc;
+      }
+      return alpha;
+    }
+    function nm(depth, alpha, beta, ply) {
+      tick(); if (stop) return 0;
+      var inChk = pos.inCheck(pos.turn);
+      if (inChk && ply < MAXPLY - 8) depth++;
+      if (depth <= 0) return useQ ? qs(alpha, beta, ply) : evaluate(pos);
+      if (pos.half >= 100) return 0;
+      var ms = order(pos.gen(false)), legalCount = 0, best = -INF, j, sc;
+      for (j = 0; j < ms.length; j++) {
+        pos.make(ms[j]);
+        if (pos.inCheck(-pos.turn)) { pos.unmake(); continue; }
+        legalCount++;
+        sc = -nm(depth - 1, -beta, -alpha, ply + 1);
+        pos.unmake();
+        if (stop) return 0;
+        if (sc > best) {
+          best = sc;
+          if (sc > alpha) { alpha = sc; if (alpha >= beta) break; }
+        }
+      }
+      if (!legalCount) return inChk ? -MATE + ply : 0;
+      return best;
+    }
+
+    var list = order(rootMoves.slice());
+    var best = list[0], bestScore = 0, doneDepth = 0, lastResults = null, d, j;
+    for (d = 1; d <= maxDepth; d++) {
+      var alpha = -INF, results = [], iterBest = null, iterScore = -INF, sc;
+      for (j = 0; j < list.length; j++) {
+        pos.make(list[j]);
+        sc = o.exact ? -nm(d - 1, -INF, INF, 1) : -nm(d - 1, -INF, -alpha, 1);
+        pos.unmake();
+        if (stop) break;
+        results.push([list[j], sc]);
+        if (sc > iterScore) { iterScore = sc; iterBest = list[j]; }
+        if (sc > alpha) alpha = sc;
+      }
+      if (stop) break;
+      best = iterBest; bestScore = iterScore; doneDepth = d; lastResults = results;
+      list = [best].concat(list.filter(function (x) { return x !== best; }));
+      if (Math.abs(bestScore) > MATE - 100) break;
+      if (Date.now() > deadline) break;
+    }
+
+    if (o.exact && lastResults && o.noise) {
+      var bs = -Infinity;
+      for (j = 0; j < lastResults.length; j++) {
+        var v = lastResults[j][1] + (Math.random() * 2 - 1) * o.noise;
+        if (v > bs) { bs = v; best = lastResults[j][0]; }
+      }
+    }
+    if (o.randomChance && Math.random() < o.randomChance) {
+      best = rootMoves[Math.floor(Math.random() * rootMoves.length)];
+    }
+    return { move: best, score: bestScore, depth: doneDepth, nodes: nodes };
+  }
+
+  function perft(pos, d) {
+    if (d === 0) return 1;
+    var ms = pos.gen(false), n = 0, j;
+    for (j = 0; j < ms.length; j++) {
+      pos.make(ms[j]);
+      if (!pos.inCheck(-pos.turn)) n += d === 1 ? 1 : perft(pos, d - 1);
+      pos.unmake();
+    }
+    return n;
+  }
+
+  return {
+    Position: Position, START: START, san: san, uci: uci, findMove: findMove, sqName: sqName,
+    insufficient: insufficient, think: think, evaluate: evaluate, perft: perft, VAL: VAL
+  };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+(function () {
+  'use strict';
+  var Z = Chess;
+
+  // ===== CẤU HÌNH FIREBASE: dán firebaseConfig của dự án (Project settings > Your apps) =====
+  // databaseURL là bắt buộc vì chế độ online dùng Realtime Database.
+  var FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyD3hT273CawvQGlKMSHNbvhKzlqh9V_F2k',
+    authDomain: 'minigame-70bef.firebaseapp.com',
+    databaseURL: 'https://minigame-70bef-default-rtdb.asia-southeast1.firebasedatabase.app',
+    projectId: 'minigame-70bef',
+    storageBucket: 'minigame-70bef.firebasestorage.app',
+    messagingSenderId: '854059498552',
+    appId: '1:854059498552:web:84a9acbaec675f80b2bacd'
+  };
+  function fbConfigured() { return !!window.firebase && !!FIREBASE_CONFIG.apiKey && !/^YOUR_/.test(FIREBASE_CONFIG.apiKey); }
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var screen = $('#screen');
+
+  var LEVELS = {
+    easy: { name: 'Dễ', hint: 'Máy tính trước 1 nước, hay bỏ sót đòn chiếu và đôi khi đi bừa. Hợp với người mới học.', maxDepth: 1, timeMs: 300, noise: 90, randomChance: 0.15, qs: false, exact: true, minDelay: 800 },
+    medium: { name: 'Trung bình', hint: 'Tính trước khoảng 3 nước và biết giữ quân. Đủ để thử sức người chơi phổ thông.', maxDepth: 3, timeMs: 1200, noise: 15, randomChance: 0, qs: true, exact: true, minDelay: 600 },
+    hard: { name: 'Khó', hint: 'Tính sâu 5 đến 7 nước, đi chậm hơn nhưng ít sai lầm. Dành cho người đã quen cờ.', maxDepth: 8, timeMs: 3000, noise: 10, randomChance: 0, qs: true, exact: false, openingExact: true, minDelay: 400 }
+  };
+  var BASES = [3, 5, 10, 15, 30, 0];
+  var INCS = [0, 2, 5];
+  var CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  var WORKER_GLUE = '\nself.onmessage=function(e){var d=e.data;var pos=new Chess.Position().setFEN(d.fen);var res=Chess.think(pos,d.opts);self.postMessage({id:d.id,res:res});};';
+
+  var M = { step: 'root', mode: 'solo', online: false, tab: 'create', level: 'easy', color: 'w', base: 0, inc: 0, code: '', err: '', busy: false, wait: null, name: '' };
+  try {
+    var saved = JSON.parse(localStorage.getItem('dtcv') || '{}');
+    if (LEVELS[saved.level]) M.level = saved.level;
+    if (['w', 'b', 'r'].indexOf(saved.color) >= 0) M.color = saved.color;
+    if (BASES.indexOf(saved.base) >= 0) M.base = saved.base;
+    if (INCS.indexOf(saved.inc) >= 0) M.inc = saved.inc;
+    M.base = 0; M.inc = 0; // luôn không giới hạn giờ
+    if (typeof saved.name === 'string') M.name = saved.name.slice(0, 16);
+  } catch (e) { }
+  function saveSettings() {
+    try { localStorage.setItem('dtcv', JSON.stringify({ level: M.level, color: M.color, base: M.base, inc: M.inc, name: M.name })); } catch (e) { }
+  }
+
+  var G = null, ON = null, roomApi = null, drag = null, gid = 0, toastTimer = 0;
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function cname(c) { return c === 1 ? 'Trắng' : 'Đen'; }
+  function myName() { return String(M.name || '').trim().slice(0, 16) || null; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function pieceSvg(p) { return '<svg class="pc ' + (p > 0 ? 'w' : 'b') + '" viewBox="0 0 100 100" aria-hidden="true"><use href="#p-' + Math.abs(p) + '"/></svg>'; }
+  function baseLabel(b) { return b ? b + ' phút' : 'Không giới hạn'; }
+
+  function fmt(ms, tenths) {
+    ms = Math.max(0, ms);
+    if (tenths && ms < 10000) {
+      return '0:' + (ms < 10000 && Math.floor(ms / 1000) < 10 ? '0' : '') + Math.floor(ms / 1000) + '.' + Math.floor((ms % 1000) / 100);
+    }
+    var t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+    var ss = (s < 10 ? '0' : '') + s;
+    return h ? h + ':' + (m < 10 ? '0' : '') + m + ':' + ss : m + ':' + ss;
+  }
+
+  function toast(msg) {
+    var t = $('#toast');
+    if (!t) return;
+    t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2600);
+  }
+
+  // ---------------------------------------------------------------- AI worker
+  var AI = (function () {
+    var worker = null, failed = false, pending = {}, seq = 0;
+    function init() {
+      try {
+        var src = document.getElementById('engine').textContent + WORKER_GLUE;
+        var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+        worker = new Worker(url);
+        worker.onmessage = function (e) {
+          var p = pending[e.data.id];
+          if (p) { delete pending[e.data.id]; clearTimeout(p.timer); p.resolve(e.data.res); }
+        };
+        worker.onerror = function () { fail(); };
+      } catch (err) { worker = null; failed = true; }
+    }
+    function fail() {
+      failed = true;
+      if (worker) { try { worker.terminate(); } catch (e) { } }
+      worker = null;
+      var ids = Object.keys(pending);
+      ids.forEach(function (id) { var p = pending[id]; delete pending[id]; clearTimeout(p.timer); p.local(); });
+    }
+    function think(fen, opts) {
+      return new Promise(function (resolve) {
+        var id = ++seq;
+        function local() {
+          setTimeout(function () { resolve(Z.think(new Z.Position().setFEN(fen), opts)); }, 30);
+        }
+        if (!worker && !failed) init();
+        if (!worker) { local(); return; }
+        var timer = setTimeout(function () {
+          if (pending[id]) { delete pending[id]; fail(); local(); }
+        }, opts.timeMs + 5000);
+        pending[id] = { resolve: resolve, local: local, timer: timer };
+        worker.postMessage({ id: id, fen: fen, opts: opts });
+      });
+    }
+    return { think: think };
+  })();
+
+  // ---------------------------------------------------------------- game core
+  function newGame(cfg) {
+    var base = cfg.base * 60000;
+    G = {
+      id: ++gid, kind: cfg.kind, online: !!cfg.online, level: cfg.level, myColor: cfg.myColor, flip: cfg.myColor === -1,
+      cfg: cfg, pos: new Z.Position().setFEN(Z.START), hist: [], keys: [], base: base, inc: cfg.inc * 1000,
+      left: { '1': base, '-1': base }, used: { '1': 0, '-1': 0 }, lastDur: { '1': null, '-1': null },
+      turnStart: performance.now(), running: true, sel: null, targets: new Map(), last: null, legalMoves: [],
+      result: null, overlayHidden: false, thinking: false, promo: null, code: cfg.code || '',
+      oppPresent: true, incoming: null, seenDr: null, myOffer: 0, offerState: '', confirm: '',
+      gn: cfg.gn || 1, wantRematch: false, oppWants: false, oppName: ''
+    };
+    G.keys.push(G.pos.key());
+    G.legalMoves = G.pos.legal();
+    render();
+    maybeAI();
+  }
+
+  function charge(color) {
+    var now = performance.now(), dt = now - G.turnStart;
+    G.used[color] += dt;
+    if (G.base) G.left[color] = Math.max(0, G.left[color] - dt);
+    G.turnStart = now;
+    return dt;
+  }
+  function liveDt(color) { return (G.running && !G.result && G.pos.turn === color) ? performance.now() - G.turnStart : 0; }
+  function curLeft(color) { return Math.max(0, G.left[color] - liveDt(color)); }
+  function curUsed(color) { return G.used[color] + liveDt(color); }
+
+  function applyMove(m, o) {
+    o = o || {};
+    var pos = G.pos, mover = pos.turn;
+    var snap = { left: { '1': G.left['1'], '-1': G.left['-1'] }, used: { '1': G.used['1'], '-1': G.used['-1'] } };
+    var san = Z.san(pos, m);
+    var dt = charge(mover);
+    G.lastDur[mover] = dt;
+    if (G.base) G.left[mover] += G.inc;
+    pos.make(m);
+    G.hist.push({ m: m, san: san, snap: snap });
+    G.last = { from: m & 63, to: (m >> 6) & 63 };
+    G.keys.push(pos.key());
+    G.sel = null; G.targets = new Map(); G.promo = null;
+    if (o.clk) applyClk(o.clk, o.all ? 0 : mover);
+    G.legalMoves = pos.legal();
+    G.incoming = null;
+    checkEnd();
+    if (G.kind === 'online' && !o.remote) publishOnline();
+    render();
+    if (!G.result) maybeAI();
+  }
+
+  function applyClk(clk, onlyColor) {
+    if (!Array.isArray(clk) || clk.length < 4) return;
+    [1, -1].forEach(function (c) {
+      if (onlyColor && onlyColor !== c) return;
+      var i = c === 1 ? 0 : 1, l = +clk[i], u = +clk[2 + i];
+      if (G.base && isFinite(l) && l >= 0 && l <= 1e8) G.left[c] = l;
+      if (isFinite(u) && u >= 0 && u <= 1e9) G.used[c] = u;
+    });
+    G.turnStart = performance.now();
+  }
+
+  function checkEnd() {
+    var pos = G.pos;
+    if (!G.legalMoves.length) {
+      if (pos.inCheck(pos.turn)) end({ type: 'mate', winner: -pos.turn, text: 'Chiếu hết! ' + cname(-pos.turn) + ' thắng.' });
+      else end({ type: 'draw', text: 'Hòa do hết nước đi (thế pat).' });
+      return;
+    }
+    if (Z.insufficient(pos)) { end({ type: 'draw', text: 'Hòa do không đủ quân để chiếu hết.' }); return; }
+    var k = G.keys[G.keys.length - 1], n = 0;
+    for (var i = 0; i < G.keys.length; i++) if (G.keys[i] === k) n++;
+    if (n >= 3) { end({ type: 'draw', text: 'Hòa do lặp lại thế cờ 3 lần.' }); return; }
+    if (pos.half >= 100) end({ type: 'draw', text: 'Hòa theo luật 50 nước.' });
+  }
+
+  function end(res) {
+    if (!G || G.result) return;
+    if (G.running) charge(G.pos.turn);
+    G.running = false; G.thinking = false; G.result = res;
+    G.sel = null; G.targets = new Map(); G.promo = null; G.overlayHidden = false;
+    render();
+  }
+
+  function maybeAI() {
+    if (!G || G.kind !== 'ai' || G.result || G.thinking) return;
+    var pos = G.pos;
+    if (pos.turn === G.myColor) return;
+    var myId = G.id, aiColor = pos.turn, L = LEVELS[G.level];
+    G.thinking = true;
+    renderSide();
+    var tm = L.timeMs;
+    if (G.base) tm = Math.min(tm, Math.max(120, curLeft(aiColor) / 30 + G.inc * 0.7));
+    var t0 = performance.now();
+    var opts = { maxDepth: L.maxDepth, timeMs: tm, noise: L.noise, randomChance: L.randomChance, qs: L.qs, exact: !!(L.exact || (L.openingExact && pos.full <= 5)) };
+    AI.think(pos.toFEN(), opts).then(function (res) {
+      var wait = Math.max(0, L.minDelay - (performance.now() - t0));
+      setTimeout(function () {
+        if (!G || G.id !== myId || G.result) return;
+        G.thinking = false;
+        if (!res || res.move == null || G.pos.turn !== aiColor) { renderSide(); return; }
+        applyMove(res.move);
+      }, wait);
+    });
+  }
+
+  function canMove() {
+    return G && !G.result && !G.promo && !G.thinking && G.pos.turn === G.myColor;
+  }
+
+  function selectSq(s) {
+    G.sel = s; G.targets = new Map();
+    G.legalMoves.forEach(function (m) {
+      if ((m & 63) === s) {
+        var to = (m >> 6) & 63;
+        if (!G.targets.has(to)) G.targets.set(to, []);
+        G.targets.get(to).push(m);
+      }
+    });
+    renderBoard();
+  }
+  function clearSel() { G.sel = null; G.targets = new Map(); renderBoard(); }
+
+  function tryMove(from, to) {
+    var ms = G.targets.get(to);
+    if (!ms || !ms.length) { clearSel(); return; }
+    if (ms.length > 1 || ((ms[0] >> 12) & 7)) { G.promo = { from: from, to: to, moves: ms }; render(); return; }
+    applyMove(ms[0]);
+  }
+
+  function undoCount() {
+    if (!G || G.kind !== 'ai' || G.thinking) return 0;
+    if (G.result && G.result.type !== 'mate' && G.result.type !== 'draw') return 0;
+    var n = 0, len = G.hist.length, turn = G.pos.turn, min = G.myColor === -1 ? 1 : 0;
+    while (len > min && (n < 1 || turn !== G.myColor)) { n++; len--; turn = -turn; }
+    return (n > 0 && turn === G.myColor) ? n : 0;
+  }
+  function doUndo() {
+    var n = undoCount();
+    if (!n) return;
+    var h = null;
+    for (var i = 0; i < n; i++) { G.pos.unmake(); G.keys.pop(); h = G.hist.pop(); }
+    G.left = { '1': h.snap.left['1'], '-1': h.snap.left['-1'] };
+    G.used = { '1': h.snap.used['1'], '-1': h.snap.used['-1'] };
+    G.turnStart = performance.now(); G.running = true; G.result = null; G.promo = null;
+    var lh = G.hist[G.hist.length - 1];
+    G.last = lh ? { from: lh.m & 63, to: (lh.m >> 6) & 63 } : null;
+    G.sel = null; G.targets = new Map(); G.legalMoves = G.pos.legal();
+    render();
+  }
+
+  function confirmable(key) {
+    if (G.confirm === key) { G.confirm = ''; return true; }
+    G.confirm = key; renderSide();
+    setTimeout(function () { if (G && G.confirm === key) { G.confirm = ''; renderSide(); } }, 3000);
+    return false;
+  }
+
+  // ---------------------------------------------------------------- rendering: board and game
+  function boardHTML(pos, o) {
+    var h = '', i, chkSq = (o.check && pos.inCheck(pos.turn)) ? pos.kp[pos.turn === 1 ? 0 : 1] : -1;
+    for (i = 0; i < 64; i++) {
+      var rr = o.flip ? 7 - (i >> 3) : (i >> 3), ff = o.flip ? 7 - (i & 7) : (i & 7), s = rr * 8 + ff, p = pos.b[s];
+      var cls = 'sq ' + (((rr + ff) & 1) ? 'd' : 'l');
+      if (o.last && (o.last.from === s || o.last.to === s)) cls += ' last';
+      if (o.sel === s) cls += ' sel';
+      if (o.targets && o.targets.has(s)) cls += ' tg' + (p ? ' cp' : '');
+      if (s === chkSq) cls += ' chk';
+      h += '<div class="' + cls + '" data-sq="' + s + '">';
+      if ((i & 7) === 0) h += '<span class="co cr">' + (8 - rr) + '</span>';
+      if ((i >> 3) === 7) h += '<span class="co cf">' + 'abcdefgh'[ff] + '</span>';
+      if (p) h += pieceSvg(p);
+      h += '</div>';
+    }
+    return h;
+  }
+  function gameBoardInner() {
+    return boardHTML(G.pos, { flip: G.flip, sel: G.sel, targets: G.targets, last: G.last, check: true });
+  }
+  function renderBoard() { var b = $('#board'); if (b) b.innerHTML = gameBoardInner(); }
+
+  function capturedBy(color) {
+    var init = { 1: 8, 2: 2, 3: 2, 4: 2, 5: 1 }, cnt = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, b = G.pos.b, i, t, h = '';
+    for (i = 0; i < 64; i++) if (b[i] * color < 0 && Math.abs(b[i]) < 6) cnt[Math.abs(b[i])]++;
+    for (t = 5; t >= 1; t--) for (i = 0; i < init[t] - cnt[t]; i++) h += pieceSvg(-color * t);
+    return h;
+  }
+  function materialDiff(color) {
+    var b = G.pos.b, sum = 0, i;
+    for (i = 0; i < 64; i++) if (b[i]) sum += (b[i] > 0 ? 1 : -1) * Z.VAL[Math.abs(b[i])];
+    var d = Math.round(sum * color / 100);
+    return d > 0 ? '+' + d : '';
+  }
+  function playerName(color) {
+    if (G.kind === 'ai') return color === G.myColor ? 'Bạn' : 'Máy · ' + LEVELS[G.level].name;
+    if (color === G.myColor) return (G.kind === 'online' && myName()) ? myName() + ' (bạn)' : 'Bạn';
+    return G.oppName || 'Đối thủ';
+  }
+  function stripHTML(color) {
+    var active = !G.result && G.pos.turn === color;
+    return '<div class="strip' + (active ? ' act' : '') + '">' +
+      '<span class="avatar">' + pieceSvg(color * 6) + '</span>' +
+      '<div class="who"><b>' + esc(playerName(color)) + '</b><span class="side-name">' + cname(color) + '</span>' +
+      '<div class="cap">' + capturedBy(color) + '<em>' + materialDiff(color) + '</em></div></div>' +
+      '<div class="clock' + (G.base ? '' : ' up') + '" title="' + (G.base ? 'Thời gian còn lại' : 'Tổng thời gian đã suy nghĩ') + '" data-clock="' + color + '"><span class="t">0:00</span><span class="s">Nước này 0:00</span></div></div>';
+  }
+
+  function statusText() {
+    if (G.result) return G.result.text;
+    var pos = G.pos, t = pos.turn, chk = pos.inCheck(t);
+    if (G.kind === 'ai') {
+      if (t !== G.myColor) return 'Máy đang suy nghĩ' + (chk ? ' (đang bị chiếu)' : '');
+      return (chk ? 'Bạn đang bị chiếu! ' : '') + 'Đến lượt bạn (' + cname(t) + ')';
+    }
+    if (t === G.myColor) return (chk ? 'Bạn đang bị chiếu! ' : '') + 'Đến lượt bạn (' + cname(t) + ')';
+    return 'Đang chờ đối thủ đi quân' + (chk ? ' (đang bị chiếu)' : '');
+  }
+
+  function movesHTML() {
+    var h = '', i;
+    for (i = 0; i < G.hist.length; i += 2) {
+      var lastW = i === G.hist.length - 1, lastB = i + 1 === G.hist.length - 1;
+      h += '<span class="mn">' + (i / 2 + 1) + '.</span><span class="mv' + (lastW ? ' cur' : '') + '">' + esc(G.hist[i].san) + '</span>' +
+        '<span class="mv' + (lastB ? ' cur' : '') + '">' + (G.hist[i + 1] ? esc(G.hist[i + 1].san) : '') + '</span>';
+    }
+    return h || '<p class="empty">Chưa có nước đi nào.</p>';
+  }
+
+  function sideHTML() {
+    var h = '<section class="card status"><div class="stat-line' + (G.thinking ? ' think' : '') + (G.result ? ' done' : '') + '" role="status">' + esc(statusText()) + '</div>';
+    if (G.kind === 'online' && !G.oppPresent && !G.result) h += '<p class="note warn">Đối thủ đã rời phòng hoặc mất kết nối. Ván được giữ nguyên, họ có thể vào lại bằng mã <b>' + esc(G.code) + '</b>.</p>';
+    if (G.incoming && !G.result) h += '<div class="note"><span>Đối thủ xin hòa.</span><span class="row"><button class="btn sm pri" data-act="accept-draw">Đồng ý</button><button class="btn sm" data-act="decline-draw">Từ chối</button></span></div>';
+    if (G.offerState === 'sent' && !G.result) h += '<p class="small">Đã gửi lời xin hòa, đang chờ đối thủ trả lời.</p>';
+    h += '</section>';
+    h += '<section class="card"><h2>Nước đi</h2><div class="moves" id="moves">' + movesHTML() + '</div></section>';
+    h += '<section class="card ctl">';
+    var over = !!G.result;
+    if (G.kind === 'ai') {
+      h += '<button class="btn" data-act="undo"' + (undoCount() ? '' : ' disabled') + '>Đi lại</button>';
+    } else {
+      if (over) h += rematchBtn('');
+      else h += '<button class="btn" data-act="draw"' + (G.offerState === 'sent' ? ' disabled' : '') + '>Xin hòa</button>';
+    }
+    h += '<button class="btn" data-act="flip">Lật bàn cờ</button>';
+    h += '<button class="btn' + (G.confirm === 'resign' ? ' danger' : '') + '" data-act="resign"' + (over ? ' disabled' : '') + '>' + (G.confirm === 'resign' ? 'Bấm lần nữa để đầu hàng' : 'Đầu hàng') + '</button>';
+    var leaveLabel = G.kind === 'online' ? 'Rời phòng' : 'Ván mới';
+    h += '<button class="btn' + (G.confirm === 'menu' ? ' danger' : '') + '" data-act="menu">' + (G.confirm === 'menu' ? 'Bấm lần nữa để thoát' : leaveLabel) + '</button>';
+    h += '</section>';
+    return h;
+  }
+
+  function rematchBtn(cls) {
+    var online = G.kind === 'online';
+    var label = !online ? 'Chơi lại' : G.wantRematch ? 'Đang chờ đối thủ…' : G.oppWants ? 'Đồng ý chơi lại' : 'Chơi lại';
+    var dis = online && (G.wantRematch || !G.oppPresent) ? ' disabled' : '';
+    return '<button class="btn ' + cls + '" data-act="rematch"' + dis + '>' + label + '</button>';
+  }
+  function overlayHTML() {
+    if (G.promo) {
+      var c = G.myColor, names = { 5: 'Hậu', 4: 'Xe', 3: 'Tượng', 2: 'Mã' }, h = '<div class="ov"><div class="ovc"><h3>Phong cấp cho Tốt</h3><div class="promo">';
+      [5, 4, 3, 2].forEach(function (t) {
+        h += '<button class="pbtn" data-act="promo" data-p="' + t + '" aria-label="' + names[t] + '">' + pieceSvg(c * t) + '<span>' + names[t] + '</span></button>';
+      });
+      return h + '</div><button class="btn sm" data-act="promo-cancel">Hủy</button></div></div>';
+    }
+    if (G.result && !G.overlayHidden) {
+      var win = G.result.winner, tone = win ? (win === G.myColor ? 'Bạn thắng' : 'Bạn thua') : 'Hòa';
+      var h2 = '<div class="ov"><div class="ovc"><p class="eyebrow">Kết thúc ván</p><h3>' + tone + '</h3><p>' + esc(G.result.text) + '</p><div class="row">';
+      h2 += rematchBtn('pri');
+      h2 += '<button class="btn" data-act="exit">Về menu</button><button class="btn" data-act="ov-hide">Xem bàn cờ</button></div></div></div>';
+      return h2;
+    }
+    return '';
+  }
+
+  function gameHTML() {
+    var bot = G.flip ? -1 : 1, top = -bot;
+    var tag = G.kind === 'online' ? 'Online · 2 người chơi · phòng ' + G.code : (G.online ? 'Online' : 'Offline') + ' · Người vs Máy · ' + LEVELS[G.level].name;
+    var tc = G.base ? (G.base / 60000) + ' phút' + (G.inc ? ' + ' + (G.inc / 1000) + ' giây' : '') : 'Không giới hạn giờ';
+    return '<div class="gamehead"><span class="tag">' + esc(tag) + '</span>' + (G.base ? '<span class="tag soft">' + esc(tc) + '</span>' : tip('Không giới hạn giờ: đồng hồ đếm lên để biết mỗi bên đã suy nghĩ bao lâu.', 'r')) + '</div>' +
+      '<div class="game"><div class="stage">' + stripHTML(top) +
+      '<div class="board-wrap"><div class="board live" id="board" aria-label="Bàn cờ">' + gameBoardInner() + '</div>' + overlayHTML() + '</div>' +
+      stripHTML(bot) + '</div><aside class="side" id="side">' + sideHTML() + '</aside></div>';
+  }
+
+  function renderGame() {
+    screen.innerHTML = gameHTML();
+    afterRender();
+  }
+  function renderSide() {
+    var s = $('#side');
+    if (!s || !G) return;
+    s.innerHTML = sideHTML();
+    var mv = $('#moves'); if (mv) mv.scrollTop = mv.scrollHeight;
+    var strips = screen.querySelectorAll('.strip');
+    for (var i = 0; i < strips.length; i++) {
+      var c = +strips[i].querySelector('[data-clock]').dataset.clock;
+      strips[i].classList.toggle('act', !G.result && G.pos.turn === c);
+    }
+  }
+  function afterRender() {
+    updateClocks();
+    var mv = $('#moves'); if (mv) mv.scrollTop = mv.scrollHeight;
+  }
+
+  function updateClocks() {
+    if (!G) return;
+    [1, -1].forEach(function (c) {
+      var el = $('[data-clock="' + c + '"]');
+      if (!el) return;
+      var t = el.firstChild, s = el.lastChild, active = G.running && !G.result && G.pos.turn === c;
+      if (G.base) {
+        var ms = curLeft(c);
+        t.textContent = fmt(ms, true);
+        el.classList.toggle('low', ms < 20000);
+      } else {
+        t.textContent = fmt(curUsed(c), false);
+      }
+      el.classList.toggle('on', active);
+      if (active) s.textContent = 'Nước này ' + fmt(liveDt(c), false);
+      else s.textContent = G.lastDur[c] == null ? 'Chưa đi' : 'Nước trước ' + fmt(G.lastDur[c], false);
+    });
+  }
+
+  setInterval(function () {
+    if (!G) return;
+    if (!G.result && G.base && curLeft(G.pos.turn) <= 0) {
+      var loser = G.pos.turn;
+      end({ type: 'time', winner: -loser, text: 'Hết giờ! ' + cname(-loser) + ' thắng.' });
+      return;
+    }
+    updateClocks();
+  }, 100);
+
+  function render() { if (G) renderGame(); else renderMenu(); }
+
+  // ---------------------------------------------------------------- rendering: menu
+  function seg(key, items, value, labelFn) {
+    return '<div class="seg" role="group">' + items.map(function (v) {
+      return '<button class="chip" data-set="' + key + ':' + v + '" aria-pressed="' + (String(value) === String(v)) + '">' + esc(labelFn(v)) + '</button>';
+    }).join('') + '</div>';
+  }
+  function timeFields() {
+    var h = '<div class="field"><label>Thời gian mỗi bên</label>' + seg('base', BASES, M.base, baseLabel) + '</div>';
+    if (M.base) h += '<div class="field"><label>Cộng thêm sau mỗi nước</label>' + seg('inc', INCS, M.inc, function (v) { return v ? '+' + v + ' giây' : 'Không cộng'; }) + '</div>';
+    else h += '<p class="small">Không giới hạn giờ: đồng hồ đếm lên để bạn biết mỗi bên đã suy nghĩ bao lâu.</p>';
+    return h;
+  }
+  function colorField(label) {
+    return '<div class="field"><label>' + label + '</label>' + seg('color', ['w', 'b', 'r'], M.color, function (v) { return v === 'w' ? 'Trắng' : v === 'b' ? 'Đen' : 'Ngẫu nhiên'; }) + '</div>';
+  }
+
+  function tip(t, cls) {
+    return '<button type="button" class="tip' + (cls ? ' ' + cls : '') + '" data-tip="' + esc(t) + '" aria-label="' + esc(t) + '">i</button>';
+  }
+  function modeOpt(v, title, sub) {
+    return '<label class="mode"><input type="radio" name="mode" data-set="mode:' + v + '"' + (M.mode === v ? ' checked' : '') + '>' +
+      '<span class="mc"><i class="tk">✓</i><b>' + title + '</b><small>' + sub + '</small></span></label>';
+  }
+  function menuHTML() {
+    var h = '';
+    var err = M.err ? '<p class="note warn" role="alert">' + esc(M.err) + '</p>' : '';
+    if (M.step === 'waiting') {
+      return '<section class="menu one"><div class="panel center"><p class="eyebrow">Phòng của bạn' +
+        tip('Bạn bè mở trang này, chọn "2 người", nhập mã vào ô Nhập mã rồi bấm Vào phòng. Bạn cầm quân ' + cname(M.wait.col) + ', không giới hạn thời gian.', 'c') + '</p>' +
+        '<div class="bigcode" aria-label="Mã phòng">' + esc(M.wait.code) + '</div>' +
+        '<div class="row"><button class="btn pri" data-act="copy-code">Sao chép mã</button><button class="btn" data-act="cancel-room">Hủy phòng</button></div>' +
+        '<p class="wait"><i></i>Đang chờ đối thủ</p></div></section>';
+    }
+    var demo = new Z.Position().setFEN('r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3');
+    var solo = M.mode !== 'duo';
+    h += '<section class="menu"><div class="menu-main"><h1>Đấu Trường Cờ Vua</h1>' +
+      '<div class="modes" role="radiogroup" aria-label="Chế độ chơi">' +
+      modeOpt('solo', '1 người', 'Đấu với máy') + modeOpt('duo', '2 người', 'Online, vào phòng bằng mã') + '</div>';
+    if (solo) {
+      h += '<div class="panel"><div class="field"><label>Cấp độ' + tip(LEVELS[M.level].hint) + '</label>' +
+        seg('level', ['easy', 'medium', 'hard'], M.level, function (v) { return LEVELS[v].name; }) + '</div>' +
+        colorField('Bạn cầm quân') +
+        '<button class="btn pri big" data-act="start-ai">Bắt đầu ván</button></div>';
+    } else {
+      h += err;
+      if (!roomApi) h += '<p class="note warn">Chưa cấu hình Firebase nên chưa chơi online được. Hãy điền firebaseConfig trong file.</p>';
+      var off = (M.busy || !roomApi) ? ' disabled' : '';
+      h += '<div class="panel">' +
+        '<div class="field"><label for="pname">Tên hiển thị' + tip('Không bắt buộc. Đối thủ sẽ thấy tên này.') + '</label>' +
+        '<input id="pname" class="nmin" type="text" autocomplete="off" maxlength="16" placeholder="Ví dụ: Minh" value="' + esc(M.name) + '"></div>' +
+        '<div class="box"><div class="boxh">Tạo mã' + tip('Tạo phòng rồi gửi mã 5 ký tự cho bạn bè. Không giới hạn thời gian.') + '</div>' +
+        colorField('Bạn cầm quân') +
+        '<button class="btn pri big" data-act="create-room"' + off + '>' + (M.busy ? 'Đang xử lý…' : 'Tạo mã') + '</button></div>' +
+        '<div class="box"><div class="boxh">Nhập mã' + tip('Nhập mã bạn bè gửi để vào phòng. Quân cờ do người tạo phòng chọn.') + '</div>' +
+        '<div class="inrow"><input id="code" class="codein" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="K7QD2" aria-label="Mã phòng" value="' + esc(M.code) + '">' +
+        '<button class="btn pri" data-act="join-room"' + off + '>Vào phòng</button></div></div></div>';
+    }
+    h += '</div><div class="hero-board" aria-hidden="true"><div class="board">' + boardHTML(demo, { flip: false, last: { from: 61, to: 34 } }) + '</div></div></section>';
+    return h;
+  }
+  function renderMenu() {
+    screen.innerHTML = menuHTML();
+  }
+
+  // ---------------------------------------------------------------- online (Firebase Realtime Database)
+  // Mỗi người chơi ghi trạng thái vào live/{mã phòng}/{uid} của chính mình (đúng với Rules hiện có),
+  // và đọc node của đối thủ trong cùng live/{mã phòng}. Hàng chờ ghép ngẫu nhiên là live/mm-{phút}-{cộng giờ}.
+  var FB = { db: null, uid: null, offset: 0, initP: null }, MM = null;
+  function noop() { }
+  function fbInit() {
+    if (FB.initP) return FB.initP;
+    FB.initP = (async function () {
+      if (!fbConfigured()) throw new Error('config');
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      FB.db = firebase.database();
+      var auth = firebase.auth(), u = auth.currentUser;
+      if (!u) u = await new Promise(function (res) { var off = auth.onAuthStateChanged(function (x) { off(); res(x); }); });
+      if (!u) u = (await auth.signInAnonymously()).user;
+      FB.uid = u.uid;
+      FB.db.ref('.info/serverTimeOffset').on('value', function (sn) { FB.offset = sn.val() || 0; });
+    })();
+    FB.initP.catch(function () { FB.initP = null; });
+    return FB.initP;
+  }
+  function fbErrText(e) {
+    var c = (e && (e.code || e.message)) || '';
+    if (c === 'config') return 'Chưa điền firebaseConfig trong file.';
+    if (/operation-not-allowed|admin-restricted/.test(c)) return 'Firebase chưa bật đăng nhập Ẩn danh (Authentication > Sign-in method > Anonymous).';
+    if (/PERMISSION_DENIED|permission/i.test(c)) return 'Firebase từ chối quyền truy cập. Hãy kiểm tra Rules của nhánh live.';
+    return 'Không kết nối được phòng chơi. Hãy kiểm tra mạng rồi thử lại.';
+  }
+
+  function genCode() {
+    var s = '';
+    for (var i = 0; i < 5; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    return s;
+  }
+
+  // Kênh phòng: cùng giao diện cũ (peers / presence / onPeers / leave), chạy trên RTDB.
+  function fbChannel(code) {
+    return new Promise(function (resolve, reject) {
+      var ref = FB.db.ref('live/' + code), meRef = ref.child(FB.uid), connRef = FB.db.ref('.info/connected');
+      var mine = {}, peers = [], cbs = [], closed = false, first = true;
+      var timer = setTimeout(function () { if (first) { first = false; ref.off('value', vh); reject(new Error('timeout')); } }, 9000);
+      function emit() { cbs.slice().forEach(function (f) { try { f(); } catch (e) { } }); }
+      var vh = ref.on('value', function (sn) {
+        var v = sn.val() || {};
+        peers = Object.keys(v).map(function (k) { return { id: k, isMe: k === FB.uid, kind: 'viewer', presence: v[k] }; });
+        if (first) { first = false; clearTimeout(timer); resolve(ch); } else emit();
+      }, function (err) { if (first) { first = false; clearTimeout(timer); reject(err); } });
+      // mất mạng rồi có lại: server đã xoá node của mình (onDisconnect), ghi lại trạng thái đang giữ
+      var chh = connRef.on('value', function (sn) {
+        if (sn.val() === true && !closed && Object.keys(mine).length) { meRef.onDisconnect().remove(); meRef.set(mine).catch(noop); }
+      });
+      var ch = {
+        peers: function () { return peers; },
+        presence: function (patch) {
+          var clean = {};
+          Object.keys(patch).forEach(function (k) {
+            var v = patch[k];
+            if (v === undefined || v === null) { delete mine[k]; clean[k] = null; } else { mine[k] = v; clean[k] = v; }
+          });
+          meRef.onDisconnect().remove();
+          return meRef.update(clean);
+        },
+        onPeers: function (cb) { cbs.push(cb); setTimeout(cb, 0); return function () { cbs = cbs.filter(function (x) { return x !== cb; }); }; },
+        leave: function () {
+          closed = true; cbs = [];
+          try { ref.off('value', vh); connRef.off('value', chh); meRef.onDisconnect().cancel(); meRef.remove().catch(noop); } catch (e) { }
+        }
+      };
+    });
+  }
+  function openChannel(code) { return fbChannel(code); }
+  function leaveCh(ch) { try { ch.leave(); } catch (e) { } }
+  function playersIn(ch, code) {
+    return ch.peers().filter(function (p) {
+      return !p.isMe && p.kind === 'viewer' && p.presence && p.presence.g === code && (p.presence.role === 'host' || p.presence.role === 'guest');
+    });
+  }
+  function leaveOnline() {
+    if (!ON) return;
+    ON.unsub.forEach(function (u) { try { u(); } catch (e) { } });
+    leaveCh(ON.ch);
+    ON = null;
+  }
+  function safeBase(v) { v = +v; return BASES.indexOf(v) >= 0 ? v : 10; }
+  function safeInc(v) { v = +v; return INCS.indexOf(v) >= 0 ? v : 0; }
+
+  async function onlineCreate() {
+    if (!roomApi || M.busy) return;
+    M.busy = true; M.err = ''; renderMenu(); saveSettings();
+    var col = M.color === 'r' ? (Math.random() < 0.5 ? 1 : -1) : (M.color === 'w' ? 1 : -1);
+    try {
+      await fbInit();
+      for (var attempt = 0; attempt < 3; attempt++) {
+        var code = genCode(), ch = await openChannel(code);
+        if (playersIn(ch, code).length) { leaveCh(ch); continue; }
+        ON = { ch: ch, code: code, role: 'host', unsub: [], cfg: { col: col, base: M.base, inc: M.inc } };
+        await ch.presence({ g: code, role: 'host', col: col, base: M.base, inc: M.inc, moves: '', gn: 1, nm: myName() });
+        ON.unsub.push(ch.onPeers(onlineSync));
+        M.step = 'waiting'; M.wait = { code: code, col: col, base: M.base }; M.busy = false; renderMenu();
+        return;
+      }
+      M.err = 'Không tạo được phòng, hãy thử lại.';
+    } catch (e) {
+      leaveOnline();
+      M.err = fbErrText(e);
+    }
+    M.busy = false; renderMenu();
+  }
+
+  // Vào phòng theo mã. Trả về '' nếu thành công, hoặc câu báo lỗi.
+  async function joinRoom(code) {
+    var ch = await openChannel(code);
+    var pl = playersIn(ch, code);
+    if (!pl.length) { leaveCh(ch); return 'Không tìm thấy phòng ' + code + '. Hãy chắc chắn bạn bè đã tạo phòng và vẫn mở trang.'; }
+    if (pl.length > 1) { leaveCh(ch); return 'Phòng ' + code + ' đã đủ 2 người chơi.'; }
+    var o = pl[0].presence, col = o.col === 1 ? -1 : 1, role = o.role === 'host' ? 'guest' : 'host';
+    var base = safeBase(o.base), inc = safeInc(o.inc);
+    ON = { ch: ch, code: code, role: role, unsub: [], cfg: { col: col, base: base, inc: inc } };
+    await ch.presence({ g: code, role: role, col: col, base: base, inc: inc, moves: '', gn: (+o.gn || 1), nm: myName() });
+    ON.unsub.push(ch.onPeers(onlineSync));
+    if (MM) mmStop(true);
+    startOnlineGame(col, base, inc, o);
+    return '';
+  }
+  async function onlineJoin() {
+    if (!roomApi || M.busy) return;
+    var code = (M.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length < 4) { M.err = 'Nhập mã phòng gồm 5 ký tự.'; renderMenu(); return; }
+    M.busy = true; M.err = ''; renderMenu();
+    try {
+      await fbInit();
+      M.err = await joinRoom(code);
+    } catch (e) {
+      leaveOnline();
+      M.err = fbErrText(e);
+    }
+    M.busy = false;
+    if (!G) renderMenu();
+  }
+
+  // ---------------------------------------------------------------- ghép ngẫu nhiên
+  // Mọi người đang tìm trận ghi {t: giờ server} vào live/mm-{phút}-{cộng giờ}/{uid} và gia hạn mỗi 4 giây.
+  // Người có uid nhỏ nhất trong nhóm chưa được mời sẽ tạo phòng rồi "mời" người chờ lâu nhất (inv + room);
+  // người được mời thấy lời mời thì vào phòng đó. Mời không được nhận sau 12 giây thì huỷ và thử lại.
+  var MM_FRESH = 15000, MM_INVITE_MS = 12000;
+  async function mmStart() {
+    if (!roomApi || M.busy || MM) return;
+    M.busy = true; M.err = ''; renderMenu(); saveSettings();
+    try {
+      await fbInit();
+      var qcode = 'mm-' + M.base + '-' + M.inc;
+      var qref = FB.db.ref('live/' + qcode), meRef = qref.child(FB.uid), connRef = FB.db.ref('.info/connected');
+      var m = { qcode: qcode, qref: qref, meRef: meRef, connRef: connRef, base: M.base, inc: M.inc, peers: {}, hosting: null, joining: false, skipRoom: {}, skipUid: {}, dead: false };
+      var ts = firebase.database.ServerValue.TIMESTAMP;
+      meRef.onDisconnect().remove();
+      await meRef.set({ t: ts });
+      m.vh = qref.on('value', function (sn) { m.peers = sn.val() || {}; mmTick(); }, function () { });
+      m.chh = connRef.on('value', function (sn) { if (sn.val() === true && !m.dead) { meRef.onDisconnect().remove(); meRef.update({ t: ts }).catch(noop); } });
+      m.hb = setInterval(function () { meRef.update({ t: ts }).catch(noop); }, 4000);
+      m.tk = setInterval(mmTick, 2000);
+      MM = m;
+      M.step = 'searching'; M.busy = false; renderMenu();
+    } catch (e) {
+      M.err = fbErrText(e); M.busy = false; renderMenu();
+    }
+  }
+  function mmStop(keepOn) {
+    var m = MM;
+    if (!m) return;
+    MM = null; m.dead = true;
+    clearInterval(m.hb); clearInterval(m.tk);
+    if (m.hosting) clearTimeout(m.hosting.timer);
+    try {
+      m.qref.off('value', m.vh); m.connRef.off('value', m.chh);
+      m.meRef.onDisconnect().cancel(); m.meRef.remove().catch(noop);
+    } catch (e) { }
+    if (!keepOn) leaveOnline();
+  }
+  function mmFresh(p, now) { return p && typeof p.t === 'number' && now - p.t < MM_FRESH; }
+  function mmTick() {
+    var m = MM;
+    if (!m || m.dead || m.joining || m.hosting || G) return;
+    var now = Date.now() + FB.offset, me = FB.uid, P = m.peers, k;
+    // 1) có người mời mình vào phòng
+    for (k in P) {
+      if (k !== me && mmFresh(P[k], now) && P[k].inv === me && P[k].room && !m.skipRoom[P[k].room]) { mmJoin(P[k].room); return; }
+    }
+    // 2) mình là người nhỏ nhất trong nhóm chưa được mời: tạo phòng và mời người chờ lâu nhất
+    var pool = Object.keys(P).filter(function (x) {
+      return mmFresh(P[x], now) && !P[x].inv && !(x !== me && m.skipUid[x] > Date.now());
+    }).sort();
+    if (pool.length >= 2 && pool[0] === me) {
+      var target = pool.slice(1).sort(function (a, b) { return (P[a].t - P[b].t) || (a < b ? -1 : 1); })[0];
+      mmHost(target);
+    }
+  }
+  async function mmHost(target) {
+    var m = MM;
+    m.hosting = { target: target, timer: 0 };
+    var col = Math.random() < 0.5 ? 1 : -1;
+    try {
+      var code, ch = null;
+      for (var attempt = 0; attempt < 3 && !ch; attempt++) {
+        code = genCode(); ch = await openChannel(code);
+        if (playersIn(ch, code).length) { leaveCh(ch); ch = null; }
+      }
+      if (!ch) throw new Error('code');
+      if (m.dead) { leaveCh(ch); return; }
+      ON = { ch: ch, code: code, role: 'host', unsub: [], cfg: { col: col, base: m.base, inc: m.inc } };
+      await ch.presence({ g: code, role: 'host', col: col, base: m.base, inc: m.inc, moves: '', gn: 1, nm: myName() });
+      ON.unsub.push(ch.onPeers(onlineSync));
+      await m.meRef.update({ inv: target, room: code });
+      if (m.dead) return;
+      m.hosting.timer = setTimeout(function () { mmUnhost(target); }, MM_INVITE_MS);
+    } catch (e) {
+      mmUnhost(target);
+    }
+  }
+  function mmUnhost(target) {
+    var m = MM;
+    if (!m || !m.hosting) return;
+    clearTimeout(m.hosting.timer);
+    m.hosting = null;
+    m.skipUid[target] = Date.now() + 20000;
+    leaveOnline();
+    m.meRef.update({ inv: null, room: null }).catch(noop);
+  }
+  async function mmJoin(code) {
+    var m = MM;
+    m.joining = true;
+    var err = 'x';
+    try { err = await joinRoom(code); } catch (e) { leaveOnline(); }
+    if (err && MM === m) { m.skipRoom[code] = true; m.joining = false; }
+  }
+
+  function startOnlineGame(col, base, inc, resume) {
+    newGame({ kind: 'online', myColor: col, base: base, inc: inc, code: ON.code, gn: (resume && +resume.gn) || 1 });
+    if (resume) adoptMoves(resume, true);
+    onlineSync();
+  }
+
+  // Ván mới trong cùng phòng: đổi màu quân, tăng số ván (gn), xoá nước đi cũ trong presence.
+  function nextOnlineGame() {
+    var gn = G.gn + 1, col = -G.myColor, cfg = { kind: 'online', myColor: col, base: G.cfg.base, inc: G.cfg.inc, code: G.code, gn: gn };
+    newGame(cfg);
+    publishOnline({ moves: '', clk: null, res: null, dr: null, da: null, dn: null, rm: null, col: col });
+  }
+
+  function adoptMoves(pr, all) {
+    var theirs = String(pr.moves || '').split(' ').filter(Boolean);
+    var mine = G.hist.map(function (h) { return Z.uci(h.m); });
+    if (theirs.length <= mine.length) return;
+    for (var i = 0; i < mine.length; i++) if (mine[i] !== theirs[i]) return;
+    for (var j = mine.length; j < theirs.length; j++) {
+      var m = Z.findMove(G.pos, theirs[j]);
+      if (!m) break;
+      var last = j === theirs.length - 1;
+      applyMove(m, { remote: true, clk: last ? pr.clk : null, all: all });
+      if (G.result) break;
+    }
+  }
+
+  function publishOnline(extra) {
+    if (!ON || !G) return;
+    var patch = {
+      gn: G.gn, nm: myName(),
+      moves: G.hist.map(function (h) { return Z.uci(h.m); }).join(' '),
+      clk: [Math.round(G.left['1']), Math.round(G.left['-1']), Math.round(G.used['1']), Math.round(G.used['-1'])]
+    };
+    if (extra) for (var k in extra) patch[k] = extra[k];
+    try { ON.ch.presence(patch).catch(function () { }); } catch (e) { }
+  }
+
+  function onlineSync() {
+    if (!ON) return;
+    var opp = playersIn(ON.ch, ON.code)[0];
+    if (!G) {
+      if ((M.step === 'waiting' || M.step === 'searching') && opp && opp.presence.role === 'guest') {
+        if (MM) mmStop(true);
+        M.step = 'root';
+        startOnlineGame(ON.cfg.col, ON.cfg.base, ON.cfg.inc, null);
+      }
+      return;
+    }
+    if (G.kind !== 'online') return;
+    var present = !!opp;
+    if (present !== G.oppPresent) { G.oppPresent = present; renderSide(); }
+    if (!opp) return;
+    var pr = opp.presence, og = +pr.gn || 1;
+    var nm = String(pr.nm || '').slice(0, 16);
+    if (nm !== G.oppName) { G.oppName = nm; render(); }
+    var oppWants = og === G.gn && +pr.rm === G.gn;
+    if (G.result && G.wantRematch && (oppWants || og === G.gn + 1)) { nextOnlineGame(); return; }
+    if (G.result && oppWants !== G.oppWants) { G.oppWants = oppWants; render(); }
+    if (og !== G.gn) return;
+    if (!G.result) adoptMoves(pr, false);
+    if (!G.result && pr.res === 'resign') { end({ type: 'resign', winner: G.myColor, text: 'Đối thủ đã đầu hàng. Bạn thắng!' }); return; }
+    if (!G.result && pr.dr && pr.dr !== G.seenDr) { G.seenDr = pr.dr; G.incoming = pr.dr; renderSide(); }
+    if (!G.result && G.myOffer && pr.da === G.myOffer) { end({ type: 'draw', text: 'Hòa do hai bên đồng ý.' }); return; }
+    if (G.myOffer && pr.dn === G.myOffer && G.offerState === 'sent') { G.offerState = 'declined'; renderSide(); toast('Đối thủ từ chối xin hòa'); }
+  }
+
+  // ---------------------------------------------------------------- actions
+  function startAI() {
+    var col = M.color === 'r' ? (Math.random() < 0.5 ? 1 : -1) : (M.color === 'w' ? 1 : -1);
+    saveSettings();
+    newGame({ kind: 'ai', online: M.online, level: M.level, myColor: col, base: M.base, inc: M.inc });
+  }
+
+  function leaveGame() {
+    G = null;
+    leaveOnline();
+    M.step = 'root'; M.err = ''; M.busy = false;
+    renderMenu();
+  }
+
+  function act(name, el) {
+    switch (name) {
+      case 'go': M.step = el.dataset.v; M.err = ''; renderMenu(); if (M.step === 'p2p' && roomApi) fbInit().catch(noop); break;
+      case 'offline': M.online = false; M.step = 'ai'; renderMenu(); break;
+      case 'online-ai': M.online = true; M.step = 'ai'; renderMenu(); break;
+      case 'tab': M.tab = el.dataset.v; M.err = ''; renderMenu(); break;
+      case 'start-ai': startAI(); break;
+      case 'create-room': onlineCreate(); break;
+      case 'random-start': mmStart(); break;
+      case 'random-cancel': mmStop(false); M.step = 'root'; M.mode = 'duo'; M.err = ''; renderMenu(); break;
+      case 'join-room': onlineJoin(); break;
+      case 'copy-code':
+        try {
+          navigator.clipboard.writeText(M.wait.code).then(function () { toast('Đã sao chép mã phòng'); }, function () { toast('Hãy chọn và sao chép mã bằng tay'); });
+        } catch (e) { toast('Hãy chọn và sao chép mã bằng tay'); }
+        break;
+      case 'cancel-room': leaveOnline(); M.step = 'root'; M.mode = 'duo'; M.wait = null; renderMenu(); break;
+      case 'flip': G.flip = !G.flip; render(); break;
+      case 'undo': doUndo(); break;
+      case 'resign':
+        if (G.result) break;
+        if (!confirmable('resign')) break;
+        if (G.kind === 'online') publishOnline({ res: 'resign' });
+        end({ type: 'resign', winner: -G.myColor, text: 'Bạn đã đầu hàng. ' + cname(-G.myColor) + ' thắng.' });
+        break;
+      case 'draw':
+        if (G.result || G.kind !== 'online') break;
+        G.myOffer = Date.now(); G.offerState = 'sent';
+        publishOnline({ dr: G.myOffer });
+        renderSide(); toast('Đã gửi lời xin hòa');
+        break;
+      case 'accept-draw':
+        if (!G.incoming) break;
+        try { ON.ch.presence({ da: G.incoming }).catch(function () { }); } catch (e) { }
+        end({ type: 'draw', text: 'Hòa do hai bên đồng ý.' });
+        break;
+      case 'decline-draw':
+        if (!G.incoming) break;
+        try { ON.ch.presence({ dn: G.incoming }).catch(function () { }); } catch (e) { }
+        G.incoming = null; renderSide();
+        break;
+      case 'menu':
+        if (!G.result && G.hist.length && !confirmable('menu')) break;
+        leaveGame();
+        break;
+      case 'exit': leaveGame(); break;
+      case 'rematch':
+        if (G.kind === 'online') {
+          if (!G.result || G.wantRematch || !G.oppPresent) break;
+          G.wantRematch = true;
+          publishOnline({ rm: G.gn });
+          render();
+          onlineSync();
+          break;
+        }
+        newGame(Object.assign({}, G.cfg));
+        break;
+      case 'ov-hide': G.overlayHidden = true; render(); break;
+      case 'promo': {
+        var t = +el.dataset.p, pm = G.promo;
+        if (!pm) break;
+        var m = pm.moves.filter(function (x) { return ((x >> 12) & 7) === t; })[0];
+        G.promo = null;
+        if (m != null) applyMove(m); else render();
+        break;
+      }
+      case 'promo-cancel': G.promo = null; G.sel = null; G.targets = new Map(); render(); break;
+    }
+  }
+
+  screen.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act],[data-set]');
+    if (!el || el.disabled) return;
+    if (el.dataset.set) {
+      var kv = el.dataset.set.split(':'), k = kv[0], v = kv[1];
+      if (k === 'base' || k === 'inc') v = +v;
+      M[k] = v;
+      if (k === 'base' && !v) M.inc = 0;
+      if (k === 'mode') { M.err = ''; if (v === 'duo' && roomApi) fbInit().catch(noop); }
+      renderMenu();
+      return;
+    }
+    act(el.dataset.act, el);
+  });
+  screen.addEventListener('input', function (e) {
+    if (e.target.id === 'pname') { M.name = e.target.value.slice(0, 16); saveSettings(); return; }
+    if (e.target.id === 'code') {
+      M.code = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+      e.target.value = M.code;
+    }
+  });
+  screen.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.id === 'code') onlineJoin();
+  });
+
+  // ---------------------------------------------------------------- board input (click, tap and drag)
+  screen.addEventListener('pointerdown', function (e) {
+    if (e.button > 0 || !G) return;
+    var sqEl = e.target.closest ? e.target.closest('.sq') : null;
+    if (!sqEl || !sqEl.closest('.board.live')) return;
+    if (!canMove()) return;
+    var s = +sqEl.dataset.sq, p = G.pos.b[s];
+    if (G.sel != null && G.targets.has(s)) { e.preventDefault(); tryMove(G.sel, s); return; }
+    if (p * G.myColor > 0) {
+      e.preventDefault();
+      var was = G.sel === s;
+      selectSq(s);
+      drag = { s: s, x: e.clientX, y: e.clientY, on: false, was: was, ghost: null, half: 0 };
+      document.addEventListener('pointermove', onDragMove);
+      document.addEventListener('pointerup', onDragEnd);
+      document.addEventListener('pointercancel', onDragEnd);
+    } else if (G.sel != null) {
+      clearSel();
+    }
+  });
+  function startDrag() {
+    var src = $('.sq[data-sq="' + drag.s + '"] .pc');
+    if (!src) { stopDrag(); return; }
+    var r = src.getBoundingClientRect(), g = src.cloneNode(true);
+    g.classList.add('ghost');
+    g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+    document.body.appendChild(g);
+    src.classList.add('lift');
+    drag.on = true; drag.ghost = g; drag.half = r.width / 2;
+  }
+  function onDragMove(e) {
+    if (!drag) return;
+    if (!drag.on) {
+      if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+      startDrag();
+      if (!drag) return;
+    }
+    drag.ghost.style.left = (e.clientX - drag.half) + 'px';
+    drag.ghost.style.top = (e.clientY - drag.half) + 'px';
+  }
+  function stopDrag() {
+    document.removeEventListener('pointermove', onDragMove);
+    document.removeEventListener('pointerup', onDragEnd);
+    document.removeEventListener('pointercancel', onDragEnd);
+    if (drag && drag.ghost) drag.ghost.remove();
+    drag = null;
+  }
+  function onDragEnd(e) {
+    var d = drag;
+    stopDrag();
+    if (!d || !G) return;
+    if (d.on) {
+      var el = document.elementFromPoint(e.clientX, e.clientY), sqEl = el && el.closest ? el.closest('.sq') : null;
+      var s2 = sqEl ? +sqEl.dataset.sq : -1;
+      if (e.type !== 'pointercancel' && s2 >= 0 && G.targets.has(s2)) tryMove(d.s, s2);
+      else renderBoard();
+    } else if (d.was) {
+      clearSel();
+    }
+  }
+
+  // ---------------------------------------------------------------- boot
+  roomApi = fbConfigured();
+
+  renderMenu();
+})();
+
+</script>
+
+</body></html>
