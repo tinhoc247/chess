@@ -824,8 +824,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
     var saved = JSON.parse(localStorage.getItem('dtcv') || '{}');
     if (LEVELS[saved.level]) M.level = saved.level;
     if (['w', 'b', 'r'].indexOf(saved.color) >= 0) M.color = saved.color;
-    if (BASES.indexOf(saved.base) >= 0) M.base = saved.base;
-    if (INCS.indexOf(saved.inc) >= 0) M.inc = saved.inc;
     if (typeof saved.name === 'string') M.name = saved.name.slice(0, 16);
   } catch (e) { }
   function saveSettings() {
@@ -1295,8 +1293,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
     h += '</div><div class="hero-board" aria-hidden="true"><div class="board">' + boardHTML(demo, { flip: false, last: { from: 61, to: 34 } }) + '</div></div></section>';
     return h;
   }
+  function fitMenu(){var m=document.querySelector('.menu');if(!m)return;m.style.zoom='';if(innerWidth<820)return;var h=m.getBoundingClientRect().height,a=innerHeight-70;if(h>a)m.style.zoom=Math.max(.5,a/h)}
+  window.addEventListener('resize', fitMenu);
   function renderMenu() {
     screen.innerHTML = menuHTML();
+    fitMenu();
   }
 
   // ---------------------------------------------------------------- online (Firebase Realtime Database)
