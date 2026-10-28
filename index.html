@@ -1,4 +1,13 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><style id="vk-css">
+button.vkb{all:unset;box-sizing:border-box;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:48px;height:42px;border-radius:12px;background:#f97316;color:#fff;font-size:26px;line-height:1;cursor:pointer;box-shadow:0 3px 0 #c2410c;display:grid;place-items:center;text-align:center;z-index:2;-webkit-tap-highlight-color:transparent}button.vkb:active{transform:translateY(-50%) scale(.94)}
+.vkw{position:relative;display:block;flex:1;min-width:0}.vkw>input{width:100%;box-sizing:border-box;padding-right:64px!important}.efield>input{padding-right:64px!important}
+#vk{position:fixed;left:0;right:0;bottom:0;z-index:99999;display:none;background:#0f172a;padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 20px #0008;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif}
+#vk .vr{display:flex;justify-content:center;gap:6px;margin:6px auto;max-width:980px}
+#vk button{all:unset;box-sizing:border-box;flex:1;min-width:0;height:clamp(54px,9vh,76px);display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(22px,4vw,36px);font-weight:800;border-radius:12px;background:#f1f5f9;color:#0f172a;box-shadow:0 4px 0 #94a3b8;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#vk button:active{transform:translateY(3px);box-shadow:0 1px 0 #94a3b8;background:#fde68a}
+#vk .num{background:#bae6fd}#vk .fn{background:#fed7aa;flex:1.6}#vk .ok{background:#22c55e;color:#fff;box-shadow:0 4px 0 #15803d;flex:2.2}#vk .cl{background:#fca5a5;flex:1.6}#vk .sp{flex:5}#vk .on{background:#fde047}
+</style>
+</head><body>
 <title>Đấu Trường Cờ Vua</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -1282,12 +1291,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
       var off = (M.busy || !roomApi) ? ' disabled' : '';
       h += '<div class="panel">' +
         '<div class="field"><label for="pname">Tên hiển thị' + tip('Không bắt buộc. Đối thủ sẽ thấy tên này.') + '</label>' +
-        '<input id="pname" class="nmin" type="text" autocomplete="off" maxlength="16" placeholder="Ví dụ: Minh" value="' + esc(M.name) + '"></div>' +
+        '<span class="vkw"><input id="pname" class="nmin" type="text" autocomplete="off" maxlength="16" placeholder="Ví dụ: Minh" value="' + esc(M.name) + '"><button type="button" class="vkb" data-vk="pname" title="Bàn phím ảo" aria-label="Bàn phím ảo">⌨️</button></span></div>' +
         '<div class="box"><div class="boxh">Tạo mã' + tip('Tạo phòng rồi gửi mã 5 ký tự cho bạn bè. Thời gian chọn ở đây cũng dùng cho Ghép ngẫu nhiên.') + '</div>' +
         colorField('Bạn cầm quân') + timeFields() +
         '<button class="btn pri big" data-act="create-room"' + off + '>' + (M.busy ? 'Đang xử lý…' : 'Tạo mã') + '</button></div>' +
         '<div class="box"><div class="boxh">Nhập mã' + tip('Nhập mã bạn bè gửi để vào phòng. Quân cờ do người tạo phòng chọn.') + '</div>' +
-        '<div class="inrow"><input id="code" class="codein" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="K7QD2" aria-label="Mã phòng" value="' + esc(M.code) + '">' +
+        '<div class="inrow"><span class="vkw"><input id="code" class="codein" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="K7QD2" aria-label="Mã phòng" value="' + esc(M.code) + '"><button type="button" class="vkb" data-vk="code" title="Bàn phím ảo" aria-label="Bàn phím ảo">⌨️</button></span>' +
         '<button class="btn pri" data-act="join-room"' + off + '>Vào phòng</button></div></div></div>';
     }
     h += '</div><div class="hero-board" aria-hidden="true"><div class="board">' + boardHTML(demo, { flip: false, last: { from: 61, to: 34 } }) + '</div></div></section>';
@@ -1780,4 +1789,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
 
 </script>
 
+<script id="vk-js">
+(function(){var T=null,OKA='',sh=true,K=null,R=['1234567890','QWERTYUIOP','ASDFGHJKL','ZXCVBNM'],NM={jN:1,pname:1,nm:1,hwn:1};
+function el(){return T?document.getElementById(T):null}
+function isNm(){return !!NM[T]}
+function build(){K=document.createElement('div');K.id='vk';K.addEventListener('mousedown',function(e){e.preventDefault()});
+ K.addEventListener('click',function(e){var b=e.target.closest('button');if(b)key(b.getAttribute('data-k'))});document.body.appendChild(K)}
+function draw(){var n=isNm(),lc=function(c){return /[A-Z]/.test(c)&&n&&!sh?c.toLowerCase():c};
+ K.innerHTML=R.map(function(r,i){return '<div class="vr">'+(i==3&&n?'<button class="fn'+(sh?' on':'')+'" data-k="SH">⇧</button>':'')+r.split('').map(function(c){return '<button'+(i==0?' class="num"':'')+' data-k="'+lc(c)+'">'+lc(c)+'</button>'}).join('')+(i==3?'<button class="fn" data-k="BS">⌫</button>':'')+'</div>'}).join('')+
+ '<div class="vr"><button class="cl" data-k="CL">✖ Đóng</button>'+(n?'<button class="sp" data-k=" ">␣ Dấu cách</button>':'')+'<button class="ok" data-k="OK">✔ Xong</button></div>'}
+function ev(e){e.dispatchEvent(new Event('input',{bubbles:true}));if(isNm())sh=!e.value||/ $/.test(e.value);draw()}
+function key(k){var e=el();if(!e)return close();
+ if(k=='CL')return close();if(k=='SH'){sh=!sh;return draw()}
+ if(k=='BS'){e.value=e.value.slice(0,-1);return ev(e)}
+ if(k=='OK'){var id=T,a=OKA;close();if(a){try{new Function(a)()}catch(x){}}else if(id=='code'||id=='cd'){var b=document.querySelector('[data-act="join-room"],[data-a="join"]');if(b)b.click()}return}
+ var m=+e.getAttribute('maxlength')||99;if(e.value.length>=m)return;e.value+=k;ev(e)}
+function close(){if(K)K.style.display='none';document.body.style.paddingBottom='';var e=el();if(e)e.removeAttribute('inputmode');T=null;OKA=''}
+function open(id,ok){var e=document.getElementById(id);if(!e)return;if(!K)build();if(T==id)return close();var o=el();if(o)o.removeAttribute('inputmode');T=id;OKA=ok||'';sh=isNm()?!e.value:true;e.setAttribute('inputmode','none');e.blur();draw();K.style.display='block';document.body.style.paddingBottom=K.offsetHeight+'px';setTimeout(function(){e.scrollIntoView({block:'center',behavior:'smooth'})},50)}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.vkb');if(b){e.preventDefault();open(b.getAttribute('data-vk'),b.getAttribute('data-ok'))}},true);
+window.vk=open;
+})();
+</script>
 </body></html>
