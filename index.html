@@ -1275,6 +1275,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
         '<div class="row"><button class="btn pri" data-act="copy-code">Sao chép mã</button><button class="btn" data-act="cancel-room">Hủy phòng</button></div>' +
         '<p class="wait"><i></i>Đang chờ đối thủ</p></div></section>';
     }
+    if (M.step === 'searching') {
+      return '<section class="menu one"><div class="panel center"><p class="eyebrow">Ghép ngẫu nhiên</p>' +
+        '<p class="wait"><i></i>Đang tìm đối thủ…</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--muted)">Bạn sẽ được ghép với người cũng đang tìm trận.</p>' +
+        '<p id="mmst" style="margin:0;font-size:13px;color:var(--muted)"></p>' +
+        '<p class="onl" style="margin:0;font-size:13px;color:var(--muted)"></p>' +
+        '<div class="row"><button class="btn" data-act="random-cancel">Dừng tìm</button></div></div></section>';
+    }
     var demo = new Z.Position().setFEN('r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3');
     var solo = M.mode !== 'duo';
     h += '<section class="menu"><div class="menu-main"><h1>Đấu Trường Cờ Vua</h1>' +
@@ -1287,17 +1295,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
         '<button class="btn pri big" data-act="start-ai">Bắt đầu ván</button></div>';
     } else {
       h += err;
+      h += '<p class="onl" style="margin:0 0 8px;font-size:13px;color:var(--muted)"></p>';
       if (!roomApi) h += '<p class="note warn">Chưa cấu hình Firebase nên chưa chơi online được. Hãy điền firebaseConfig trong file.</p>';
       var off = (M.busy || !roomApi) ? ' disabled' : '';
       h += '<div class="panel">' +
         '<div class="field"><label for="pname">Tên hiển thị' + tip('Không bắt buộc. Đối thủ sẽ thấy tên này.') + '</label>' +
         '<span class="vkw"><input id="pname" class="nmin" type="text" autocomplete="off" maxlength="16" placeholder="Ví dụ: Minh" value="' + esc(M.name) + '"><button type="button" class="vkb" data-vk="pname" title="Bàn phím ảo" aria-label="Bàn phím ảo">⌨️</button></span></div>' +
-        '<div class="box"><div class="boxh">Tạo mã' + tip('Tạo phòng rồi gửi mã 5 ký tự cho bạn bè. Thời gian chọn ở đây cũng dùng cho Ghép ngẫu nhiên.') + '</div>' +
+        '<div class="box"><div class="boxh">Tạo mã' + tip('Tạo phòng rồi gửi mã 5 ký tự cho bạn bè. Thời gian chọn ở đây chỉ áp dụng cho phòng tạo mã.') + '</div>' +
         colorField('Bạn cầm quân') + timeFields() +
         '<button class="btn pri big" data-act="create-room"' + off + '>' + (M.busy ? 'Đang xử lý…' : 'Tạo mã') + '</button></div>' +
         '<div class="box"><div class="boxh">Nhập mã' + tip('Nhập mã bạn bè gửi để vào phòng. Quân cờ do người tạo phòng chọn.') + '</div>' +
         '<div class="inrow"><span class="vkw"><input id="code" class="codein" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="6" placeholder="K7QD2" aria-label="Mã phòng" value="' + esc(M.code) + '"><button type="button" class="vkb" data-vk="code" title="Bàn phím ảo" aria-label="Bàn phím ảo">⌨️</button></span>' +
-        '<button class="btn pri" data-act="join-room"' + off + '>Vào phòng</button></div></div></div>';
+        '<button class="btn pri" data-act="join-room"' + off + '>Vào phòng</button></div></div>' +
+        '<button class="btn big" data-act="random-start"' + off + '>Ghép ngẫu nhiên (3 phút)</button></div>';
     }
     h += '</div><div class="hero-board" aria-hidden="true"><div class="board">' + boardHTML(demo, { flip: false, last: { from: 61, to: 34 } }) + '</div></div></section>';
     return h;
@@ -1320,7 +1330,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
       if (!fbConfigured()) throw new Error('config');
       if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
       FB.db = firebase.database();
-      var auth = firebase.auth(), u = auth.currentUser;
+      var auth = firebase.auth();
+      try { await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION); } catch (e) { }
+      var u = auth.currentUser;
       if (!u) u = await new Promise(function (res) { var off = auth.onAuthStateChanged(function (x) { off(); res(x); }); });
       if (!u) u = (await auth.signInAnonymously()).user;
       FB.uid = u.uid;
@@ -1458,13 +1470,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
     M.busy = true; M.err = ''; renderMenu(); saveSettings();
     try {
       await fbInit();
-      var qcode = 'mm-' + M.base + '-' + M.inc;
+      var qcode = 'mm-3-0';
       var qref = FB.db.ref('live/' + qcode), meRef = qref.child(FB.uid), connRef = FB.db.ref('.info/connected');
-      var m = { qcode: qcode, qref: qref, meRef: meRef, connRef: connRef, base: M.base, inc: M.inc, peers: {}, hosting: null, joining: false, skipRoom: {}, skipUid: {}, dead: false };
+      var m = { qcode: qcode, qref: qref, meRef: meRef, connRef: connRef, base: 3, inc: 0, peers: {}, hosting: null, joining: false, skipRoom: {}, skipUid: {}, dead: false };
       var ts = firebase.database.ServerValue.TIMESTAMP;
       meRef.onDisconnect().remove();
       await meRef.set({ t: ts });
-      m.vh = qref.on('value', function (sn) { m.peers = sn.val() || {}; mmTick(); }, function () { });
+      m.vh = qref.on('value', function (sn) { m.err = ''; m.peers = sn.val() || {}; mmUi(); mmTick(); }, function (e) { m.err = fbErrText(e); mmUi(); });
       m.chh = connRef.on('value', function (sn) { if (sn.val() === true && !m.dead) { meRef.onDisconnect().remove(); meRef.update({ t: ts }).catch(noop); } });
       m.hb = setInterval(function () { meRef.update({ t: ts }).catch(noop); }, 4000);
       m.tk = setInterval(mmTick, 2000);
@@ -1486,6 +1498,42 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
     } catch (e) { }
     if (!keepOn) leaveOnline();
   }
+
+  // ---------------------------------------------------------------- trạng thái hàng chờ + số người online
+  // Mỗi trang đang mở ghi 1 mục live/on-{uid} = {t}, tự xoá khi thoát; ai im quá 15 giây thì không tính.
+  var PR = {}, PE = '';
+  function mmUi() {
+    var m = MM, el = document.getElementById('mmst');
+    if (!m || !el) return;
+    var now = Date.now() + FB.offset, n = 0;
+    for (var k in m.peers) if (mmFresh(m.peers[k], now)) n++;
+    el.textContent = m.err ? m.err : 'Hàng chờ (3 phút/bên): ' + n + ' người';
+    el.style.color = m.err ? 'var(--accent)' : 'var(--muted)';
+  }
+  function onlUi() {
+    var els = document.querySelectorAll('.onl');
+    if (!els.length) return;
+    var t;
+    if (PE) t = PE;
+    else {
+      var now = Date.now() + FB.offset, n = 0;
+      for (var k in PR) { var x = PR[k]; if (x && typeof x.t === 'number' && now - x.t < MM_FRESH) n++; }
+      t = '🟢 Đang online: ' + Math.max(n, 1) + ' người';
+    }
+    for (var i = 0; i < els.length; i++) { els[i].textContent = t; els[i].style.color = PE ? 'var(--accent)' : 'var(--muted)'; }
+  }
+  function presInit() {
+    fbInit().then(function () {
+      var r = FB.db.ref('live/on-chess'), me = r.child(FB.uid), conn = FB.db.ref('.info/connected'), ts = firebase.database.ServerValue.TIMESTAMP;
+      conn.on('value', function (q) { if (q.val() === true) { me.onDisconnect().remove(); me.set({ t: ts }).catch(noop); } });
+      setInterval(function () { me.update({ t: ts }).catch(noop); }, 5000);
+      setInterval(function () { onlUi(); mmUi(); }, 3000);
+      r.on('value', function (q) { PR = q.val() || {}; PE = ''; onlUi(); }, function (e) { PE = fbErrText(e); onlUi(); });
+    }).catch(noop);
+  }
+  var _renderMenu = renderMenu;
+  renderMenu = function () { _renderMenu(); onlUi(); mmUi(); };
+  presInit();
   function mmFresh(p, now) { return p && typeof p.t === 'number' && now - p.t < MM_FRESH; }
   function mmTick() {
     var m = MM;
@@ -1523,6 +1571,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
       if (m.dead) return;
       m.hosting.timer = setTimeout(function () { mmUnhost(target); }, MM_INVITE_MS);
     } catch (e) {
+      if (MM) { MM.err = fbErrText(e); mmUi(); }
       mmUnhost(target);
     }
   }
@@ -1539,8 +1588,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
     var m = MM;
     m.joining = true;
     var err = 'x';
-    try { err = await joinRoom(code); } catch (e) { leaveOnline(); }
-    if (err && MM === m) { m.skipRoom[code] = true; m.joining = false; }
+    try { err = await joinRoom(code); } catch (e) { leaveOnline(); err = fbErrText(e); }
+    if (err && MM === m) { m.skipRoom[code] = true; m.joining = false; if (typeof err === 'string' && err !== 'x') { m.err = err; mmUi(); } }
   }
 
   function startOnlineGame(col, base, inc, resume) {
