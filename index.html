@@ -1394,7 +1394,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
   function leaveCh(ch) { try { ch.leave(); } catch (e) { } }
   function playersIn(ch, code) {
     return ch.peers().filter(function (p) {
-      return !p.isMe && p.kind === 'viewer' && p.presence && p.presence.g === code && (p.presence.role === 'host' || p.presence.role === 'guest');
+      return !p.isMe && p.kind === 'viewer' && p.presence && p.presence.rg === code && (p.presence.role === 'host' || p.presence.role === 'guest');
     });
   }
   function leaveOnline() {
@@ -1416,7 +1416,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
         var code = genCode(), ch = await openChannel(code);
         if (playersIn(ch, code).length) { leaveCh(ch); continue; }
         ON = { ch: ch, code: code, role: 'host', unsub: [], cfg: { col: col, base: M.base, inc: M.inc } };
-        await ch.presence({ g: code, role: 'host', col: col, base: M.base, inc: M.inc, moves: '', gn: 1, nm: myName() });
+        await ch.presence({ rg: code, role: 'host', col: col, base: M.base, inc: M.inc, moves: '', gn: 1, nm: myName() });
         ON.unsub.push(ch.onPeers(onlineSync));
         M.step = 'waiting'; M.wait = { code: code, col: col, base: M.base }; M.busy = false; renderMenu();
         return;
@@ -1438,7 +1438,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
     var o = pl[0].presence, col = o.col === 1 ? -1 : 1, role = o.role === 'host' ? 'guest' : 'host';
     var base = safeBase(o.base), inc = safeInc(o.inc);
     ON = { ch: ch, code: code, role: role, unsub: [], cfg: { col: col, base: base, inc: inc } };
-    await ch.presence({ g: code, role: role, col: col, base: base, inc: inc, moves: '', gn: (+o.gn || 1), nm: myName() });
+    await ch.presence({ rg: code, role: role, col: col, base: base, inc: inc, moves: '', gn: (+o.gn || 1), nm: myName() });
     ON.unsub.push(ch.onPeers(onlineSync));
     if (MM) mmStop(true);
     startOnlineGame(col, base, inc, o);
@@ -1565,7 +1565,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = Chess;
       if (!ch) throw new Error('code');
       if (m.dead) { leaveCh(ch); return; }
       ON = { ch: ch, code: code, role: 'host', unsub: [], cfg: { col: col, base: m.base, inc: m.inc } };
-      await ch.presence({ g: code, role: 'host', col: col, base: m.base, inc: m.inc, moves: '', gn: 1, nm: myName() });
+      await ch.presence({ rg: code, role: 'host', col: col, base: m.base, inc: m.inc, moves: '', gn: 1, nm: myName() });
       ON.unsub.push(ch.onPeers(onlineSync));
       await m.meRef.update({ inv: target, room: code });
       if (m.dead) return;
@@ -1857,21 +1857,6 @@ function close(){if(K)K.style.display='none';document.body.style.paddingBottom='
 function open(id,ok){var e=document.getElementById(id);if(!e)return;if(!K)build();if(T==id)return close();var o=el();if(o)o.removeAttribute('inputmode');T=id;OKA=ok||'';sh=isNm()?!e.value:true;e.setAttribute('inputmode','none');e.blur();draw();K.style.display='block';document.body.style.paddingBottom=K.offsetHeight+'px';setTimeout(function(){e.scrollIntoView({block:'center',behavior:'smooth'})},50)}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.vkb');if(b){e.preventDefault();open(b.getAttribute('data-vk'),b.getAttribute('data-ok'))}},true);
 window.vk=open;
-})();
-</script>
-<style id="fs-css">#fsb{position:fixed;top:max(6px,env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));z-index:99998;width:34px;height:34px;padding:0;border-radius:9px;border:1px solid rgba(128,128,128,.5);background:rgba(20,30,32,.55);color:#fff;font:700 18px/1 sans-serif;cursor:pointer;opacity:.7;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}#fsb:hover{opacity:1}</style>
-<script id="fs-js">
-(function(){var d=document,e=d.documentElement,rq=e.requestFullscreen||e.webkitRequestFullscreen;if(!rq)return;
-function isFs(){return !!(d.fullscreenElement||d.webkitFullscreenElement)}
-function go(){try{var p=rq.call(e);if(p&&p.catch)p.catch(function(){})}catch(x){}}
-function out(){try{var f=d.exitFullscreen||d.webkitExitFullscreen;var p=f.call(d);if(p&&p.catch)p.catch(function(){})}catch(x){}}
-var b=d.createElement('button');b.id='fsb';b.type='button';b.setAttribute('aria-label','Toàn màn hình');b.title='Toàn màn hình';
-function sync(){b.textContent=isFs()?'✕':'⛶'}sync();
-b.addEventListener('click',function(ev){ev.stopPropagation();isFs()?out():go()});
-d.addEventListener('fullscreenchange',sync);d.addEventListener('webkitfullscreenchange',sync);
-d.body.appendChild(b);
-/* tự động vào toàn màn hình ở lần bấm nút đầu tiên (trình duyệt yêu cầu có thao tác của người dùng) */
-d.addEventListener('click',function f(ev){var t=ev.target;if(!t.closest||!t.closest('button')||t.closest('#fsb'))return;d.removeEventListener('click',f,true);if(!isFs())go()},true);
 })();
 </script>
 </body></html>
